@@ -59,8 +59,10 @@ import { TermsOfUseModal } from '../components/legal/TermsOfUseModal';
 import { MembershipPlansModal } from '../components/legal/MembershipPlansModal';
 import { UserManualModal } from '../components/legal/UserManualModal';
 import { NotificationDetailModal } from '../components/notifications/NotificationDetailModal';
+import { AuthPromptModal, AuthPromptDetails } from '../components/marketplace/AuthPromptModal';
 import { getCommissionRateForTier, getMaxProductsForTier } from '../data/membershipPlansData';
 import { NotificationService } from '../services/notification_service';
+import { multiStoreDb } from '../services/multiStoreDatabase';
 
 export type AppEnvironment = 'MARKETPLACE' | 'SELLER_PORTAL' | 'MASTER_PANEL';
 
@@ -219,6 +221,24 @@ export interface AppContextType {
   toastMessage: string | null;
   triggerToast: (msg: string) => void;
 
+  // Modal de Autenticação / Cadastro / Login
+  isAuthModalOpen: boolean;
+  authModalTab: 'login' | 'register-customer' | 'register-merchant';
+  openAuthModal: (tab?: 'login' | 'register-customer' | 'register-merchant') => void;
+  closeAuthModal: () => void;
+
+  // Prompt de Autenticação Necessária (Compras, Agendamentos, etc.)
+  authPromptModal: {
+    isOpen: boolean;
+    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL';
+    details?: AuthPromptDetails;
+  };
+  promptAuthRequirement: (
+    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL',
+    details?: AuthPromptDetails
+  ) => void;
+  closeAuthPromptModal: () => void;
+
   // Avaliações Mútuas & Reputação
   reviews: CustomerToMerchantReview[];
   merchantReviews: MerchantToCustomerReview[];
@@ -266,7 +286,11 @@ export interface AppContextType {
   // Conversas e Mensagens Internas Vinculadas a Subpedidos
   subOrderMessages: SubOrderMessage[];
   activeChatSubOrder: ActiveChatSubOrder | null;
-  checkAccessPermission: (userId: string | undefined | null, subOrderId: string) => boolean;
+  checkAccessPermission: (
+    userId: string | undefined | null,
+    subOrderId: string,
+    contextHint?: Partial<ActiveChatSubOrder>
+  ) => boolean;
   openSubOrderChat: (params: ActiveChatSubOrder) => void;
   closeSubOrderChat: () => void;
   sendSubOrderMessage: (data: Omit<SubOrderMessage, 'id' | 'createdAt' | 'readBy'>) => SubOrderMessage;
@@ -452,6 +476,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_MERCHANT_REVIEWS;
   });
 
+  // Modal de Autenticação Global
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'register-customer' | 'register-merchant'>('login');
+
+  const openAuthModal = (tab: 'login' | 'register-customer' | 'register-merchant' = 'login') => {
+    setAuthModalTab(tab);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+  };
+
+  // Modal de Exigência de Autenticação para Ações Restritas (Compra, Agendar, etc.)
+  const [authPromptModal, setAuthPromptModal] = useState<{
+    isOpen: boolean;
+    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL';
+    details?: AuthPromptDetails;
+  }>({
+    isOpen: false,
+    actionType: 'GERAL'
+  });
+
+  const promptAuthRequirement = (
+    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL',
+    details?: AuthPromptDetails
+  ) => {
+    setAuthPromptModal({
+      isOpen: true,
+      actionType,
+      details
+    });
+    if (actionType === 'COMPRA') {
+      triggerToast('Atenção: Cadastre-se ou faça login para realizar compras.');
+    } else if (actionType === 'AGENDAMENTO') {
+      triggerToast('Atenção: Cadastre-se ou faça login para agendar serviços.');
+    } else {
+      triggerToast('Atenção: Cadastre-se ou faça login para continuar.');
+    }
+  };
+
+  const closeAuthPromptModal = () => {
+    setAuthPromptModal((prev) => ({ ...prev, isOpen: false }));
+  };
+
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState<boolean>(false);
   const [policyModalTab, setPolicyModalTab] = useState<'customer' | 'merchant' | 'moderation'>('customer');
 
@@ -509,22 +578,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [activeChatSubOrder, setActiveChatSubOrder] = useState<ActiveChatSubOrder | null>(null);
-
-  const openSubOrderChat = useCallback((params: ActiveChatSubOrder) => {
-    setActiveChatSubOrder(params);
-    // Auto-mark messages as read when opening
-    if (params.subpedidoId && currentUser?.id) {
-      setSubOrderMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.subpedidoId === params.subpedidoId) {
-            if (msg.readBy.includes(currentUser.id)) return msg;
-            return { ...msg, readBy: [...msg.readBy, currentUser.id] };
-          }
-          return msg;
-        })
-      );
-    }
-  }, [currentUser]);
 
   const closeSubOrderChat = useCallback(() => {
     setActiveChatSubOrder(null);
@@ -994,36 +1047,94 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     []
   );
 
+  // Garante que cada usuário receba uma notificação de boas-vindas personalizada com seu próprio nome
+  const ensureUserWelcomeNotification = useCallback(
+    (user: User) => {
+      setNotifications((prev) => {
+        const hasWelcome = prev.some(
+          (n) => n.recipientUserId === user.id || (n.recipientName && n.recipientName === user.name)
+        );
+        if (hasWelcome) return prev;
+
+        const isSeller = user.role === 'VENDEDOR';
+        const isMaster = user.role === 'MASTER';
+
+        const welcomeNotif: InAppNotification = {
+          id: `welcome-${user.id}-${Date.now()}`,
+          title: `🌿 Olá, ${user.name}! Bem-vindo(a) ao Achei Aqui`,
+          message: isSeller
+            ? `Olá, ${user.name}! Seu acesso como Lojista / Prestador está ativo. Você pode gerenciar seu catálogo, ativar ou desativar o chat direto nos produtos e responder aos clientes com total privacidade.`
+            : isMaster
+            ? `Olá, ${user.name}! O painel Master Administrativo está pronto para monitoramento e auditoria com segurança jurídica.`
+            : `Olá, ${user.name}! Sua conta pessoal de morador de Cachoeiras de Macacu está ativa. Converse diretamente com lojistas pelo chat interno dos produtos e acompanhe seus pedidos em tempo real.`,
+          category: 'SISTEMA',
+          audience: isSeller ? 'SPECIFIC_MERCHANT' : 'SPECIFIC_USER',
+          recipientUserId: user.id,
+          recipientMerchantId: user.merchantId,
+          recipientName: user.name,
+          recipientPhone: user.phone,
+          recipientEmail: user.email,
+          senderName: 'Administração Achei Aqui',
+          senderRole: 'SISTEMA',
+          priority: 'HIGH',
+          actionUrl: isSeller ? 'orders' : 'home',
+          actionLabel: isSeller ? 'Painel do Lojista' : 'Explorar Produtos',
+          readBy: [],
+          createdAt: new Date().toISOString()
+        };
+
+        return [welcomeNotif, ...prev];
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (currentUser) {
+      ensureUserWelcomeNotification(currentUser);
+    }
+  }, [currentUser, ensureUserWelcomeNotification]);
+
   const getUserNotifications = useCallback(
     (user?: User | null): InAppNotification[] => {
       const targetUser = user !== undefined ? user : currentUser;
+      // Visitantes não logados não possuem acesso a notificações particulares
       if (!targetUser) {
-        return notifications.filter((n) => n.audience === 'ALL');
+        return [];
       }
 
+      // Master possui visão administrativa geral
       if (targetUser.role === 'MASTER') {
         return notifications;
       }
 
+      // VENDEDOR: Apenas notificações destinadas especificamente a ele ou à sua loja
       if (targetUser.role === 'VENDEDOR') {
         const userMerchantId = targetUser.merchantId;
         return notifications.filter((n) => {
-          if (n.audience === 'ALL' || n.audience === 'ALL_MERCHANTS') return true;
           if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
-          if (n.recipientMerchantId && userMerchantId && n.recipientMerchantId === userMerchantId) return true;
+          if (userMerchantId && n.recipientMerchantId && n.recipientMerchantId === userMerchantId) return true;
           return false;
         });
       }
 
+      // CLIENTE: Apenas notificações estritamente particulares com o seu nome e ID
       return notifications.filter((n) => {
-        if (n.audience === 'ALL' || n.audience === 'ALL_CUSTOMERS') return true;
         if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
         if (
           n.recipientPhone &&
           targetUser.phone &&
           n.recipientPhone.replace(/\D/g, '') === targetUser.phone.replace(/\D/g, '')
-        )
+        ) {
           return true;
+        }
+        if (
+          n.recipientEmail &&
+          targetUser.email &&
+          n.recipientEmail.trim().toLowerCase() === targetUser.email.trim().toLowerCase()
+        ) {
+          return true;
+        }
         return false;
       });
     },
@@ -1043,6 +1154,191 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ==========================================
   // CONVERSAS & MENSAGENS INTERNAS POR SUBPEDIDO
   // ==========================================
+
+  // Validação estrita de permissão de acesso a mensagens e dados de subpedidos
+  const checkAccessPermission = useCallback(
+    (
+      userId: string | undefined | null,
+      subOrderId: string,
+      contextHint?: Partial<ActiveChatSubOrder>
+    ): boolean => {
+      // 1. Usuário não autenticado ou subpedido inválido: acesso terminantemente negado
+      if (!userId || !subOrderId) {
+        return false;
+      }
+
+      // 2. Identificar usuário
+      const user =
+        currentUser && currentUser.id === userId
+          ? currentUser
+          : users.find((u) => u.id === userId);
+
+      if (!user) {
+        return false;
+      }
+
+      // 3. Administrador Master possui acesso irrestrito para auditoria, suporte e mediação
+      if (user.role === 'MASTER') {
+        return true;
+      }
+
+      // 4. Verificação com base em metadados contextuais explícitos passados na abertura
+      if (contextHint) {
+        if (user.role === 'CLIENTE') {
+          if (contextHint.customerId && contextHint.customerId === user.id) {
+            return true;
+          }
+        } else if (user.role === 'VENDEDOR') {
+          if (
+            user.merchantId &&
+            contextHint.merchantId &&
+            user.merchantId === contextHint.merchantId
+          ) {
+            return true;
+          }
+        }
+      }
+
+      // 5. Canal de conversa direta com lojista (ex: sub-direct-store-1, chat-direct-store-1-userId, inquiry-store-1-userId)
+      if (
+        subOrderId.startsWith('sub-direct-') ||
+        subOrderId.startsWith('chat-direct-') ||
+        subOrderId.startsWith('inquiry-')
+      ) {
+        if (user.role === 'VENDEDOR') {
+          if (contextHint?.merchantId && user.merchantId === contextHint.merchantId) return true;
+          if (user.merchantId && subOrderId.includes(user.merchantId)) return true;
+          return false;
+        }
+        if (user.role === 'CLIENTE') {
+          if (contextHint?.customerId && contextHint.customerId === user.id) return true;
+          if (subOrderId.includes(user.id)) return true;
+          return !contextHint?.customerId || contextHint.customerId === user.id;
+        }
+      }
+
+      // 6. Canal de dúvida sobre produto específico (ex: chat-prod-prod-1-userId, product-inquiry-prod-1-userId, sub-prod-prod-1)
+      if (
+        subOrderId.startsWith('chat-prod-') ||
+        subOrderId.startsWith('product-inquiry-') ||
+        subOrderId.startsWith('sub-prod-')
+      ) {
+        if (user.role === 'VENDEDOR') {
+          if (contextHint?.merchantId && user.merchantId === contextHint.merchantId) return true;
+          if (contextHint?.productId) {
+            const targetProduct = products.find((p) => p.id === contextHint.productId);
+            if (targetProduct && user.merchantId === targetProduct.merchantId) return true;
+          }
+          if (user.merchantId && subOrderId.includes(user.merchantId)) return true;
+          return false;
+        }
+        if (user.role === 'CLIENTE') {
+          if (contextHint?.customerId && contextHint.customerId === user.id) return true;
+          if (subOrderId.includes(user.id)) return true;
+          return !contextHint?.customerId || contextHint.customerId === user.id;
+        }
+      }
+
+      // 7. Buscar pedido na lista de pedidos locais
+      const order = orders.find((o) => {
+        if (o.id === subOrderId) return true;
+        if (`sub-${o.id}` === subOrderId) return true;
+        if (contextHint?.pedidoPrincipalId && o.id === contextHint.pedidoPrincipalId) return true;
+        if (o.code === subOrderId || o.orderNumber === subOrderId) return true;
+        if ((o as any).subpedidos?.some((s: any) => s.id === subOrderId || s.codigoSubpedido === subOrderId)) return true;
+        return false;
+      });
+
+      if (order) {
+        if (user.role === 'CLIENTE') {
+          const isOwner =
+            order.userId === user.id ||
+            (order as any).clienteId === user.id ||
+            (order.customerEmail && order.customerEmail.toLowerCase() === user.email.toLowerCase());
+          return !!isOwner;
+        }
+        if (user.role === 'VENDEDOR') {
+          if (!user.merchantId) return false;
+          if (order.merchantId === user.merchantId) return true;
+          if ((order as any).subpedidos?.some((s: any) => s.lojaId === user.merchantId)) return true;
+          return false;
+        }
+      }
+
+      // 8. Checagem no banco de dados multiloja (MultiStoreDatabase)
+      try {
+        const subInDb = multiStoreDb.obterSubpedido(subOrderId);
+        if (subInDb) {
+          if (user.role === 'CLIENTE') {
+            const mainOrder = multiStoreDb.obterPedidoPrincipal(subInDb.pedidoPrincipalId);
+            return (
+              mainOrder?.userId === user.id ||
+              mainOrder?.customerEmail?.toLowerCase() === user.email.toLowerCase()
+            );
+          }
+          if (user.role === 'VENDEDOR') {
+            return !!user.merchantId && subInDb.lojaId === user.merchantId;
+          }
+        }
+      } catch (e) {
+        // Fallback gracioso
+      }
+
+      // 9. Verificação por histórico de mensagens já trocadas no subpedido
+      const existingThread = subOrderMessages.filter((m) => m.subpedidoId === subOrderId);
+      if (existingThread.length > 0) {
+        const userParticipated = existingThread.some(
+          (m) => m.senderId === user.id || m.recipientId === user.id
+        );
+        if (userParticipated) return true;
+      }
+
+      return false;
+    },
+    [currentUser, users, products, orders, subOrderMessages]
+  );
+
+  const openSubOrderChat = useCallback(
+    (params: ActiveChatSubOrder) => {
+      // Validação estrita de permissão antes de abrir o modal do chat
+      const hasPermission = checkAccessPermission(currentUser?.id, params.subpedidoId, params);
+
+      if (!hasPermission) {
+        triggerToast('Acesso negado: Você não tem permissão para acessar esta conversa.');
+        logSecurityEvent(
+          'UNAUTHORIZED_CHAT_ACCESS_BLOCKED',
+          `Tentativa de acesso não autorizada ao chat do Subpedido ${params.codigoSubpedido || params.subpedidoId} pelo usuário ${currentUser?.email || 'Anônimo'} (${currentUser?.role || 'NÃO_AUTENTICADO'}).`,
+          {
+            subpedidoId: params.subpedidoId,
+            codigoSubpedido: params.codigoSubpedido,
+            attemptedUserId: currentUser?.id,
+            attemptedUserEmail: currentUser?.email,
+            attemptedUserRole: currentUser?.role,
+            orderMerchantId: params.merchantId,
+            orderCustomerId: params.customerId
+          },
+          'WARNING'
+        );
+        return;
+      }
+
+      setActiveChatSubOrder(params);
+
+      // Auto-marcar mensagens como lidas ao abrir
+      if (params.subpedidoId && currentUser?.id) {
+        setSubOrderMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.subpedidoId === params.subpedidoId) {
+              if (msg.readBy.includes(currentUser.id)) return msg;
+              return { ...msg, readBy: [...msg.readBy, currentUser.id] };
+            }
+            return msg;
+          })
+        );
+      }
+    },
+    [currentUser, checkAccessPermission, triggerToast, logSecurityEvent]
+  );
 
   const sendSubOrderMessage = useCallback(
     (data: Omit<SubOrderMessage, 'id' | 'createdAt' | 'readBy'>): SubOrderMessage => {
@@ -2004,12 +2300,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedUser: User = {
       ...currentUser,
       preferences,
+      notificationPreferences: preferences.notificationChannels || currentUser.notificationPreferences,
       updatedAt: new Date().toISOString()
     };
 
     setCurrentUser(updatedUser);
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     addAuditLog('CUSTOMER_PREFERENCES_UPDATE', 'Preferências de comunicação e canais atualizadas.');
-    triggerToast('Preferências de comunicação salvas com sucesso!');
+    triggerToast('Preferências de notificação salvas com sucesso!');
   };
 
   // Products
@@ -3329,6 +3627,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closeNotificationDetailModal,
         subOrderMessages,
         activeChatSubOrder,
+        checkAccessPermission,
         openSubOrderChat,
         closeSubOrderChat,
         sendSubOrderMessage,
@@ -3339,10 +3638,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markSubOrderMessagesAsRead,
         getSubOrderMessages,
         getUnreadSubOrderMessagesCount,
-        deleteSubOrderMessage
+        deleteSubOrderMessage,
+        isAuthModalOpen,
+        authModalTab,
+        openAuthModal,
+        closeAuthModal,
+        authPromptModal,
+        promptAuthRequirement,
+        closeAuthPromptModal
       }}
     >
       {children}
+      <AuthPromptModal
+        isOpen={authPromptModal.isOpen}
+        onClose={closeAuthPromptModal}
+        actionType={authPromptModal.actionType}
+        details={authPromptModal.details}
+        onRegister={() => openAuthModal('register-customer')}
+        onLogin={() => openAuthModal('login')}
+      />
       <ReviewPolicyModal
         isOpen={isPolicyModalOpen}
         onClose={closePolicyModal}

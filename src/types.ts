@@ -113,6 +113,18 @@ export interface VipMeasurements {
   fitNotes?: string;
 }
 
+export interface NotificationChannelMatrix {
+  push: boolean;
+  email: boolean;
+  whatsapp: boolean;
+}
+
+export interface NotificationPreferences {
+  orderStatus: NotificationChannelMatrix;
+  sellerMessages: NotificationChannelMatrix;
+  promotions: NotificationChannelMatrix;
+}
+
 export interface CustomerPreferences {
   receiveWhatsApp: boolean;
   receiveEmail: boolean;
@@ -121,6 +133,7 @@ export interface CustomerPreferences {
   preferredModality?: 'DELIVERY' | 'RETIRADA' | 'EXPERIMENTAÇÃO';
   dietaryRestrictions?: string;
   favoriteCategories?: string[];
+  notificationChannels?: NotificationPreferences;
 }
 
 export interface EmergencyContact {
@@ -151,6 +164,7 @@ export interface User {
   references?: ProfessionalReference[];
   measurements?: VipMeasurements;
   preferences?: CustomerPreferences;
+  notificationPreferences?: NotificationPreferences;
   emergencyContact?: EmergencyContact;
   generalNotes?: string;
   membershipTier?: MembershipTier;
@@ -208,6 +222,7 @@ export interface Product {
   reviewsCount: number;
   variations?: ProductVariation[];
   specs?: { [key: string]: string };
+  allowDirectChat?: boolean; // Habilitar ou desativar chat interno direto para este produto
   // Novas configurações de Taxa, PIX e Ações por Categoria
   advanceFeeRequired?: boolean;
   advanceFeeAmount?: number; // Valor da taxa de adiantamento em R$
@@ -300,6 +315,7 @@ export interface ServiceItem {
   pricingTable?: ServicePricingTable;
   credentials?: ProfessionalCredentials;
   executionLocation?: 'ESTABELECIMENTO' | 'DOMICILIO' | 'ONLINE' | 'AMBOS';
+  allowDirectChat?: boolean; // Habilitar ou desativar chat interno direto para este serviço
   status: 'active' | 'paused' | 'archived';
 }
 
@@ -340,6 +356,7 @@ export interface StoreMerchant {
   supportsPickup: boolean;
   supportsTrial: boolean;
   supportsAppointments: boolean;
+  allowDirectChat?: boolean; // Lojistas e Prestadores de Serviços podem ativar ou desativar chat em suas configurações
   membershipTier?: MembershipTier;
   maxProductsLimit?: number;
   commissionRate?: number; // In percent (e.g. 12, 8, 5, 3, 1)
@@ -453,8 +470,9 @@ export interface InAppNotification {
   recipientMerchantId?: string; // target specific merchant ID
   recipientName?: string; // display name
   recipientPhone?: string;
+  recipientEmail?: string;
   senderName: string; // e.g. "Administração Master Achei Aqui"
-  senderRole?: 'MASTER' | 'SISTEMA' | 'LOJISTA';
+  senderRole?: 'MASTER' | 'SISTEMA' | 'LOJISTA' | 'CLIENTE';
   priority: NotificationPriority;
   actionUrl?: string; // e.g. 'account', 'orders', 'plans'
   actionLabel?: string; // e.g. "Ver Pedido", "Ver Planos"
@@ -484,6 +502,7 @@ export type NotificationEventType =
   | 'PASSWORD_RESET'
   | 'PHONE_VERIFICATION_CODE'
   | 'ADMIN_BROADCAST'
+  | 'CHAT_MESSAGE'
   | 'WELCOME';
 
 export interface NotificationLog {
@@ -1019,6 +1038,11 @@ export interface ActiveChatSubOrder {
   orderStatus?: string;
   securityCode?: string;
   orderTotal?: number;
+  productId?: string;
+  productName?: string;
+  productImage?: string;
+  productPrice?: number;
+  isDirectProductChat?: boolean;
 }
 
 export interface SubOrderMessage {

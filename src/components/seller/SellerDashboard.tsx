@@ -119,6 +119,7 @@ export const SellerDashboard: React.FC = () => {
   const [storeSupportsPickup, setStoreSupportsPickup] = useState(currentStore?.supportsPickup ?? true);
   const [storeSupportsTrial, setStoreSupportsTrial] = useState(currentStore?.supportsTrial ?? false);
   const [storeSupportsAppointments, setStoreSupportsAppointments] = useState(currentStore?.supportsAppointments ?? true);
+  const [storeAllowDirectChat, setStoreAllowDirectChat] = useState<boolean>(currentStore?.allowDirectChat ?? true);
 
   useEffect(() => {
     if (currentStore) {
@@ -141,6 +142,7 @@ export const SellerDashboard: React.FC = () => {
       setStoreSupportsPickup(currentStore.supportsPickup ?? true);
       setStoreSupportsTrial(currentStore.supportsTrial ?? false);
       setStoreSupportsAppointments(currentStore.supportsAppointments ?? true);
+      setStoreAllowDirectChat(currentStore.allowDirectChat ?? true);
     }
   }, [currentStore]);
 
@@ -257,6 +259,18 @@ export const SellerDashboard: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
+  const handleToggleDirectChat = (forcedVal?: boolean) => {
+    if (!currentStore) return;
+    const nextVal = forcedVal !== undefined ? forcedVal : !storeAllowDirectChat;
+    setStoreAllowDirectChat(nextVal);
+    updateStoreProfile(currentStore.id, { allowDirectChat: nextVal });
+    triggerToast(
+      nextVal
+        ? 'Chat interno ATIVADO! Clientes agora podem tirar dúvidas e mandar mensagens.'
+        : 'Chat interno DESATIVADO! O botão de chat foi ocultado para os clientes nesta loja e produtos.'
+    );
+  };
+
   const handleSaveStoreProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentStore) return;
@@ -281,7 +295,8 @@ export const SellerDashboard: React.FC = () => {
       gallery: storeGallery,
       supportsPickup: storeSupportsPickup,
       supportsTrial: storeSupportsTrial,
-      supportsAppointments: storeSupportsAppointments
+      supportsAppointments: storeSupportsAppointments,
+      allowDirectChat: storeAllowDirectChat
     });
 
     triggerToast('Perfil e fotos da loja atualizados com sucesso!');
@@ -589,12 +604,27 @@ export const SellerDashboard: React.FC = () => {
         </div>
 
         {/* Bottom Store Status */}
-        <div className="p-4 border-t border-slate-800 text-xs">
+        <div className="p-4 border-t border-slate-800 text-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-slate-400">Status da Loja:</span>
             <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-bold text-[10px]">
               ● Aberta e Operando
             </span>
+          </div>
+          <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/60">
+            <span className="text-slate-400">Chat com Clientes:</span>
+            <button
+              type="button"
+              onClick={() => handleToggleDirectChat()}
+              className={`px-2 py-0.5 rounded-full font-bold text-[10px] transition-colors cursor-pointer flex items-center space-x-1 ${
+                storeAllowDirectChat
+                  ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                  : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+              }`}
+              title="Clique para alternar o status do chat interno"
+            >
+              <span>{storeAllowDirectChat ? '● Ativado' : '○ Desativado'}</span>
+            </button>
           </div>
         </div>
       </aside>
@@ -1884,6 +1914,66 @@ export const SellerDashboard: React.FC = () => {
                       />
                       <span className="font-semibold text-slate-700">Experimentação / Provador em Casa (Moda)</span>
                     </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: STATUS DO CHAT INTERNO COM CLIENTES */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-emerald-600" />
+                      <span>Chat Interno com Clientes (Atendimento Direto)</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Defina se os clientes podem abrir conversas e tirar dúvidas diretamente com você pelos produtos e pelo perfil da sua loja.
+                    </p>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider self-start sm:self-auto flex items-center space-x-1.5 ${
+                      storeAllowDirectChat
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-slate-100 text-slate-600 border border-slate-300'
+                    }`}
+                  >
+                    <span>{storeAllowDirectChat ? '● Chat Ativado' : '○ Chat Desativado'}</span>
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border transition-all bg-slate-50 border-slate-200">
+                  <div className="space-y-1">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                      Disponibilidade do Chat Interno no Marketplace
+                    </h4>
+                    <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
+                      {storeAllowDirectChat
+                        ? 'O botão de Chat Interno está VISÍVEL nos seus produtos cadastrados e no perfil da loja. Clientes podem enviar mensagens, dúvidas de estoque ou especificações técnicas.'
+                        : 'O botão de Chat Interno está OCULTO e INDISPONÍVEL para os clientes nesta loja e em todos os seus produtos cadastrados. Útil para períodos de recesso, reformas ou folgas.'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-3 shrink-0">
+                    <button
+                      type="button"
+                      id="toggle-seller-direct-chat"
+                      onClick={() => handleToggleDirectChat()}
+                      className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        storeAllowDirectChat ? 'bg-emerald-600' : 'bg-slate-300'
+                      }`}
+                      role="switch"
+                      aria-checked={storeAllowDirectChat}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          storeAllowDirectChat ? 'translate-x-7' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                    <span className="text-xs font-black text-slate-700 w-24">
+                      {storeAllowDirectChat ? 'Ativado' : 'Desativado'}
+                    </span>
                   </div>
                 </div>
               </div>

@@ -59,7 +59,8 @@ export const StoreDetailView: React.FC<StoreDetailViewProps> = ({
     toggleFavorite,
     reviews,
     openSubOrderChat,
-    currentUser
+    currentUser,
+    promptAuthRequirement
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'catalog' | 'about' | 'reviews'>('catalog');
@@ -184,6 +185,14 @@ export const StoreDetailView: React.FC<StoreDetailViewProps> = ({
 
   const handleQuickAddToCart = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
+    if (!currentUser) {
+      promptAuthRequirement('COMPRA', {
+        title: product.name,
+        price: product.price,
+        merchantName: product.merchantName
+      });
+      return;
+    }
     const defaultModality = product.availableModalities?.[0] || 'DELIVERY';
     addToCart({
       product,
@@ -318,26 +327,38 @@ export const StoreDetailView: React.FC<StoreDetailViewProps> = ({
                   <span className="text-amber-700 font-normal">({merchant.reviewsCount} avaliações)</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    openSubOrderChat({
-                      subpedidoId: `inquiry-${merchant.id}-${currentUser?.id || 'guest'}`,
-                      codigoSubpedido: `#ATD-${merchant.name.substring(0, 3).toUpperCase()}`,
-                      merchantId: merchant.id,
-                      merchantName: merchant.name,
-                      customerId: currentUser?.id,
-                      customerName: currentUser?.name || 'Cliente Achei Aqui',
-                      customerPhone: currentUser?.phone,
-                      orderTitle: `Atendimento Geral / Dúvidas - ${merchant.name}`,
-                      orderStatus: 'Canal Aberto'
-                    });
-                  }}
-                  className="flex items-center space-x-1.5 px-3 sm:px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm shadow-emerald-700/20 transition-all active:scale-95"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Mensagem Interna</span>
-                </button>
+                {merchant.allowDirectChat !== false ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!currentUser) {
+                        promptAuthRequirement('Para conversar pelo chat interno com o lojista e tirar dúvidas, acesse sua conta ou cadastre-se gratuitamente.');
+                        return;
+                      }
+                      openSubOrderChat({
+                        subpedidoId: `inquiry-${merchant.id}-${currentUser.id}`,
+                        codigoSubpedido: `#ATD-${merchant.name.substring(0, 3).toUpperCase()}`,
+                        merchantId: merchant.id,
+                        merchantName: merchant.name,
+                        customerId: currentUser.id,
+                        customerName: currentUser.name || 'Cliente Achei Aqui',
+                        customerPhone: currentUser.phone,
+                        orderTitle: `Atendimento Geral / Dúvidas - ${merchant.name}`,
+                        orderStatus: 'Canal Aberto'
+                      });
+                    }}
+                    className="flex items-center space-x-1.5 px-3 sm:px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm shadow-emerald-700/20 transition-all active:scale-95"
+                    title="Conversar com o lojista através da comunicação interna"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Chat Interno</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium">
+                    <MessageCircle className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Chat Pausado</span>
+                  </div>
+                )}
               </div>
             </div>
 

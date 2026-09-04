@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Calendar,
@@ -32,9 +32,20 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
   onClose,
   onBookingSuccess
 }) => {
-  const { currentUser, createOrder, triggerToast, merchants } = useApp();
+  const { currentUser, createOrder, triggerToast, merchants, promptAuthRequirement } = useApp();
 
   const currentMerchant = merchants.find((m) => m.id === service?.merchantId);
+
+  useEffect(() => {
+    if (service && !currentUser) {
+      onClose();
+      promptAuthRequirement('AGENDAMENTO', {
+        title: service.title,
+        merchantName: service.merchantName,
+        price: service.price
+      });
+    }
+  }, [service, currentUser]);
 
   const [selectedProfessional, setSelectedProfessional] = useState(
     service?.professionals[0] || 'Profissional Disponível'
@@ -74,6 +85,15 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
 
   const handleConfirmBooking = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      onClose();
+      promptAuthRequirement('AGENDAMENTO', {
+        title: service.title,
+        merchantName: service.merchantName,
+        price: finalPrice
+      });
+      return;
+    }
     if (!customerName || !customerPhone) {
       alert('Por favor preencha nome e telefone.');
       return;

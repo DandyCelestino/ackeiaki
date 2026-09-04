@@ -38,7 +38,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onOpenCheckout,
   onSelectStore
 }) => {
-  const { isFavorite, toggleFavorite, products, addToCart, reviews, openPolicyModal, merchants, openSubOrderChat, currentUser } = useApp();
+  const {
+    isFavorite,
+    toggleFavorite,
+    products,
+    addToCart,
+    reviews,
+    openPolicyModal,
+    merchants,
+    openSubOrderChat,
+    currentUser,
+    promptAuthRequirement,
+    triggerToast
+  } = useApp();
 
   const currentMerchant = merchants.find((m) => m.id === product?.merchantId);
 
@@ -192,28 +204,39 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        openSubOrderChat({
-                          subpedidoId: `product-inquiry-${product.id}-${currentUser?.id || 'guest'}`,
-                          codigoSubpedido: `#PROD-${product.id.substring(0, 5).toUpperCase()}`,
-                          merchantId: product.merchantId,
-                          merchantName: product.merchantName,
-                          customerId: currentUser?.id,
-                          customerName: currentUser?.name || 'Cliente Achei Aqui',
-                          customerPhone: currentUser?.phone,
-                          orderTitle: `Dúvida sobre: ${product.name}`,
-                          orderStatus: 'Consulta de Produto',
-                          orderTotal: product.price
-                        });
-                      }}
-                      className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 transition-all flex items-center justify-center space-x-1 shadow-2xs active:scale-95"
-                      title="Enviar mensagem interna para o lojista"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Mensagem</span>
-                    </button>
+                    {currentMerchant?.allowDirectChat !== false && product.allowDirectChat !== false && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!currentUser) {
+                            promptAuthRequirement('Para conversar pelo chat interno com o lojista e tirar dúvidas sobre este produto, acesse sua conta ou cadastre-se gratuitamente.');
+                            return;
+                          }
+                          openSubOrderChat({
+                            subpedidoId: `product-inquiry-${product.id}-${currentUser.id}`,
+                            codigoSubpedido: `#PROD-${product.id.substring(0, 5).toUpperCase()}`,
+                            merchantId: product.merchantId,
+                            merchantName: product.merchantName,
+                            customerId: currentUser.id,
+                            customerName: currentUser.name || 'Cliente Achei Aqui',
+                            customerPhone: currentUser.phone,
+                            orderTitle: `Dúvida sobre: ${product.name}`,
+                            orderStatus: 'Consulta de Produto',
+                            orderTotal: product.price,
+                            productId: product.id,
+                            productName: product.name,
+                            productImage: product.images?.[0] || product.image,
+                            productPrice: product.price,
+                            isDirectProductChat: true
+                          });
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 transition-all flex items-center justify-center space-x-1 shadow-2xs active:scale-95"
+                        title="Enviar mensagem interna para o lojista"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Chat</span>
+                      </button>
+                    )}
 
                     {onSelectStore && (
                       <button
@@ -600,6 +623,41 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           </button>
                         )}
                       </div>
+
+                      {/* Botão de Chat Interno Direto com o Estabelecimento */}
+                      {currentMerchant?.allowDirectChat !== false && product.allowDirectChat !== false && (
+                        <button
+                          id="btn-chat-with-seller"
+                          type="button"
+                          onClick={() => {
+                            if (!currentUser) {
+                              promptAuthRequirement('Para conversar pelo chat interno com o lojista e tirar dúvidas sobre este produto, acesse sua conta ou cadastre-se gratuitamente.');
+                              return;
+                            }
+                            openSubOrderChat({
+                              subpedidoId: `product-inquiry-${product.id}-${currentUser.id}`,
+                              codigoSubpedido: `#PROD-${product.id.substring(0, 5).toUpperCase()}`,
+                              merchantId: product.merchantId,
+                              merchantName: product.merchantName,
+                              customerId: currentUser.id,
+                              customerName: currentUser.name || 'Cliente Achei Aqui',
+                              customerPhone: currentUser.phone,
+                              orderTitle: `Dúvida sobre: ${product.name}`,
+                              orderStatus: 'Consulta de Produto',
+                              orderTotal: product.price,
+                              productId: product.id,
+                              productName: product.name,
+                              productImage: product.images?.[0] || product.image,
+                              productPrice: product.price,
+                              isDirectProductChat: true
+                            });
+                          }}
+                          className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center space-x-2 active:scale-95 shadow-2xs"
+                        >
+                          <MessageSquare className="w-4 h-4 text-emerald-700" />
+                          <span>Conversar no Chat Interno com o Lojista</span>
+                        </button>
+                      )}
                     </>
                   );
                 })()}

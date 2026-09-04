@@ -14,7 +14,9 @@ import {
   MessageSquare,
   Package,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert,
+  ShoppingBag
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { SubOrderMessage } from '../../types';
@@ -23,6 +25,7 @@ export const SubOrderChatModal: React.FC = () => {
   const {
     activeChatSubOrder,
     closeSubOrderChat,
+    checkAccessPermission,
     subOrderMessages,
     sendSubOrderMessage,
     markSubOrderMessagesAsRead,
@@ -66,6 +69,29 @@ export const SubOrderChatModal: React.FC = () => {
 
   if (!activeChatSubOrder) return null;
 
+  const isAccessAllowed = checkAccessPermission(currentUser?.id, activeChatSubOrder.subpedidoId, activeChatSubOrder);
+  if (!isAccessAllowed) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-rose-100 text-center">
+          <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 mb-1">Acesso Restrito ao Canal</h3>
+          <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+            Você não possui permissão para visualizar mensagens ou dados vinculados a este subpedido. Somente o comprador titular, a loja responsável e a auditoria Master possuem autorização para acessar esta conversa.
+          </p>
+          <button
+            onClick={closeSubOrderChat}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
+          >
+            Fechar Janela
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const isUserSeller = currentUser?.role === 'VENDEDOR';
   const isUserMaster = currentUser?.role === 'MASTER';
   const isUserClient = currentUser?.role === 'CLIENTE' || !currentUser?.role;
@@ -103,22 +129,48 @@ export const SubOrderChatModal: React.FC = () => {
       isInternalNote: (isUserSeller || isUserMaster) && isInternalNote
     });
 
-    // Enviar notificação in-app para a contraparte
-    const recipientUserId = isUserClient ? activeChatSubOrder.merchantId : activeChatSubOrder.customerId;
-    if (recipientUserId) {
+    // Enviar notificação in-app particular para a contraparte direta
+    const msgSnippet = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
+    if (isUserClient && activeChatSubOrder.merchantId) {
       sendInAppNotification({
-        recipientId: recipientUserId,
-        recipientRole: isUserClient ? 'VENDEDOR' : 'CLIENTE',
-        audience: 'SPECIFIC_USER',
-        category: 'ORDERS',
+        title: `💬 Nova Mensagem de ${currentSenderName}`,
+        message: `Olá, ${merchantName}!\n\nVocê recebeu uma nova mensagem de ${currentSenderName} referente a "${orderTitle || 'atendimento'}":\n"${msgSnippet}"`,
+        category: 'COMUNICADO',
         priority: 'HIGH',
-        title: `Nova Mensagem: Subpedido ${codigoSubpedido}`,
-        message: `${currentSenderName}: "${messageText.substring(0, 70)}${messageText.length > 70 ? '...' : ''}"`,
-        linkUrl: `/pedidos?sub=${subpedidoId}`,
+        audience: 'SPECIFIC_MERCHANT',
+        recipientMerchantId: activeChatSubOrder.merchantId,
+        recipientName: merchantName,
+        senderName: currentSenderName,
+        senderRole: 'CLIENTE',
+        actionUrl: 'chat',
+        actionLabel: 'Abrir Conversa',
+        orderCode: codigoSubpedido,
         metadata: {
           subpedidoId,
           codigoSubpedido,
-          senderName: currentSenderName
+          senderName: currentSenderName,
+          chatContext: activeChatSubOrder
+        }
+      });
+    } else if (isUserSeller && activeChatSubOrder.customerId) {
+      sendInAppNotification({
+        title: `💬 Resposta de ${merchantName}`,
+        message: `Olá, ${customerName}!\n\nA loja ${merchantName} respondeu sua mensagem referente a "${orderTitle || 'atendimento'}":\n"${msgSnippet}"`,
+        category: 'COMUNICADO',
+        priority: 'HIGH',
+        audience: 'SPECIFIC_USER',
+        recipientUserId: activeChatSubOrder.customerId,
+        recipientName: customerName,
+        senderName: merchantName,
+        senderRole: 'LOJISTA',
+        actionUrl: 'chat',
+        actionLabel: 'Ver Resposta',
+        orderCode: codigoSubpedido,
+        metadata: {
+          subpedidoId,
+          codigoSubpedido,
+          senderName: currentSenderName,
+          chatContext: activeChatSubOrder
         }
       });
     }
@@ -208,6 +260,39 @@ export const SubOrderChatModal: React.FC = () => {
             LGPD 100%
           </span>
         </div>
+
+        {/* PRODUCT CONTEXT CARD (SE ABERTO A PARTIR DE UM PRODUTO OU SERVIÇO) */}
+        {(activeChatSubOrder.productName || activeChatSubOrder.productId) && (
+          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center space-x-3 min-w-0">
+              {activeChatSubOrder.productImage ? (
+                <img
+                  src={activeChatSubOrder.productImage}
+                  alt={activeChatSubOrder.productName || 'Produto'}
+                  referrerPolicy="no-referrer"
+                  className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
+                  Conversa Direta sobre Produto
+                </span>
+                <p className="text-xs font-bold text-slate-900 truncate">
+                  {activeChatSubOrder.productName}
+                </p>
+              </div>
+            </div>
+            {activeChatSubOrder.productPrice !== undefined && (
+              <span className="text-xs font-black text-emerald-700 font-mono shrink-0 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                R$ {activeChatSubOrder.productPrice.toFixed(2).replace('.', ',')}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* MESSAGES SCROLLABLE LIST */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">

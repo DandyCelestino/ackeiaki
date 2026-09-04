@@ -56,7 +56,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   selectedVariations = {},
   onOrderSuccess
 }) => {
-  const { currentUser, createOrder, confirmOrderStock, rejectOrderStock, currentCity, triggerToast, openSubOrderChat } = useApp();
+  const { currentUser, createOrder, confirmOrderStock, rejectOrderStock, currentCity, triggerToast, openSubOrderChat, promptAuthRequirement } = useApp();
+
+  useEffect(() => {
+    if (isOpen && !currentUser) {
+      onClose();
+      promptAuthRequirement('COMPRA', {
+        title: product?.name,
+        price: product?.price,
+        merchantName: product?.merchantName
+      });
+    }
+  }, [isOpen, currentUser]);
 
   // Current Step
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('FORM');

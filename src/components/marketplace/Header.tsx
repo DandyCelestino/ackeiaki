@@ -214,15 +214,19 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="sm:hidden">Manual</span>
             </button>
             <span className="text-emerald-500">|</span>
-            {/* Botão de Cadastro Acessível no Top Bar */}
-            <button
-              onClick={() => onOpenAuth('register-customer')}
-              className="text-white hover:text-emerald-200 font-bold flex items-center gap-1 transition-colors"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Criar Conta</span>
-            </button>
-            <span className="text-emerald-500">|</span>
+            {/* Botão de Cadastro Acessível no Top Bar (Apenas para usuários NÃO cadastrados/logados) */}
+            {!currentUser && (
+              <>
+                <button
+                  onClick={() => onOpenAuth('register-customer')}
+                  className="text-white hover:text-emerald-200 font-bold flex items-center gap-1 transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Criar Conta</span>
+                </button>
+                <span className="text-emerald-500">|</span>
+              </>
+            )}
             <button
               onClick={() => onOpenAuth('register-merchant')}
               className="text-emerald-300 hover:text-white font-bold transition-colors"
@@ -471,15 +475,17 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Action Buttons & Auth (Desktop and Mobile) */}
           <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
-            {/* Botão CADASTRE-SE Ultra Visível e Acessível a Todos */}
-            <button
-              id="header-register-btn"
-              onClick={() => onOpenAuth('register-customer')}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] sm:text-xs font-black shadow-sm shadow-emerald-700/30 hover:shadow-md transition-all shrink-0"
-            >
-              <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>CADASTRE-SE</span>
-            </button>
+            {/* Botão CADASTRE-SE - Visível APENAS para usuários NÃO cadastrados/logados */}
+            {!currentUser && (
+              <button
+                id="header-register-btn"
+                onClick={() => onOpenAuth('register-customer')}
+                className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] sm:text-xs font-black shadow-sm shadow-emerald-700/30 hover:shadow-md transition-all shrink-0 cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>CADASTRE-SE</span>
+              </button>
+            )}
 
             {/* Quero Vender CTA (Desktop) */}
             <button

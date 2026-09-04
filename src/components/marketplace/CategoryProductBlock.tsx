@@ -9,7 +9,8 @@ import {
   Eye,
   Heart,
   Star,
-  Check
+  Check,
+  MessageSquare
 } from 'lucide-react';
 import { Product } from '../../types';
 import { useApp } from '../../context/AppContext';
@@ -35,7 +36,17 @@ export const CategoryProductBlock: React.FC<CategoryProductBlockProps> = ({
   onNavigateToCategory,
   onSelectStore
 }) => {
-  const { addToCart, favorites, toggleFavorite, frontendConfig } = useApp();
+  const {
+    addToCart,
+    favorites,
+    toggleFavorite,
+    frontendConfig,
+    currentUser,
+    promptAuthRequirement,
+    openSubOrderChat,
+    merchants,
+    triggerToast
+  } = useApp();
   const [currentPage, setCurrentPage] = useState(0);
   const [addedAnimationId, setAddedAnimationId] = useState<string | null>(null);
 
@@ -66,6 +77,14 @@ export const CategoryProductBlock: React.FC<CategoryProductBlockProps> = ({
 
   const handleQuickAddToCart = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
+    if (!currentUser) {
+      promptAuthRequirement('COMPRA', {
+        title: product.name,
+        price: product.price,
+        merchantName: product.merchantName
+      });
+      return;
+    }
     const defaultModality = product.availableModalities?.[0] || 'DELIVERY';
     addToCart({
       product,
@@ -271,6 +290,45 @@ export const CategoryProductBlock: React.FC<CategoryProductBlockProps> = ({
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
+
+                    {(() => {
+                      const merchant = merchants.find((m) => m.id === product.merchantId);
+                      const isChatAllowed = merchant?.allowDirectChat !== false && product.allowDirectChat !== false;
+                      if (!isChatAllowed) return null;
+                      return (
+                        <button
+                          id={`btn-chat-${product.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!currentUser) {
+                              promptAuthRequirement('Para conversar pelo chat interno com o lojista e tirar dúvidas sobre este produto, acesse sua conta ou cadastre-se gratuitamente.');
+                              return;
+                            }
+                            openSubOrderChat({
+                              subpedidoId: `product-inquiry-${product.id}-${currentUser.id}`,
+                              codigoSubpedido: `#PROD-${product.id.substring(0, 5).toUpperCase()}`,
+                              merchantId: product.merchantId,
+                              merchantName: product.merchantName,
+                              customerId: currentUser.id,
+                              customerName: currentUser.name || 'Cliente Achei Aqui',
+                              customerPhone: currentUser.phone,
+                              orderTitle: `Dúvida sobre: ${product.name}`,
+                              orderStatus: 'Consulta de Produto',
+                              orderTotal: product.price,
+                              productId: product.id,
+                              productName: product.name,
+                              productImage: product.images?.[0] || product.image,
+                              productPrice: product.price,
+                              isDirectProductChat: true
+                            });
+                          }}
+                          className="p-1.5 sm:p-2 rounded-lg border border-emerald-200 hover:bg-emerald-50 text-emerald-800 transition-colors"
+                          title="Conversar com o lojista no chat interno"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

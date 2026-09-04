@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Phone,
   Mail,
+  Bell,
   Shield,
   KeyRound,
   FileText,
@@ -368,12 +369,14 @@ export const CustomerProfileEditor: React.FC = () => {
     e.preventDefault();
 
     const prefs: CustomerPreferences = {
+      ...(currentUser?.preferences || {}),
       receiveWhatsApp,
       receiveEmail,
       receiveSms,
       receivePromoAlerts,
       preferredModality,
-      dietaryRestrictions: dietaryRestrictions.trim() || undefined
+      dietaryRestrictions: dietaryRestrictions.trim() || undefined,
+      notificationChannels: currentUser?.preferences?.notificationChannels || currentUser?.notificationPreferences
     };
 
     updateCustomerPreferences(prefs);
@@ -1237,6 +1240,13 @@ export const CustomerProfileEditor: React.FC = () => {
             <p className="text-xs text-slate-500">
               Personalize como você deseja receber as mensagens do Achei Aqui e as atualizações de seus pedidos.
             </p>
+          </div>
+
+          <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 flex items-start space-x-3">
+            <Bell className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+            <div className="text-xs text-blue-900">
+              <span className="font-bold">Nova Matriz de Canais por Tipo de Alerta:</span> Você também pode definir canais específicos (Push, E-mail e WhatsApp) separados para <strong>Status de Pedido</strong>, <strong>Mensagens de Lojistas</strong> e <strong>Ofertas</strong> acessando a aba <strong>Preferências de Notificação</strong> no menu superior.
+            </div>
           </div>
 
           <div className="space-y-3">

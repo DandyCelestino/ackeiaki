@@ -331,7 +331,7 @@ export class NotificationService {
    * Dispara um envio genérico e registra a notificação In-App
    */
   static async sendNotification(params: {
-    eventType: NotificationEventType;
+    eventType?: NotificationEventType;
     recipientName: string;
     recipientPhone?: string;
     recipientEmail?: string;
@@ -341,7 +341,7 @@ export class NotificationService {
     category?: NotificationCategory;
     priority?: NotificationPriority;
     senderName?: string;
-    senderRole?: 'MASTER' | 'SISTEMA' | 'LOJISTA';
+    senderRole?: 'MASTER' | 'SISTEMA' | 'LOJISTA' | 'CLIENTE';
     actionUrl?: string;
     actionLabel?: string;
     channel?: NotificationChannel;
@@ -513,13 +513,13 @@ export class NotificationService {
         break;
     }
 
-    // 1. Notificar Cliente (In-App particular endereçado ao cliente)
+    // 1. Notificar Cliente (In-App particular endereçado exclusivamente ao cliente)
     const clientNotif = await this.sendNotification({
       eventType,
       recipientName: order.customerName,
       recipientPhone: order.customerPhone,
       recipientUserId: order.userId,
-      audience: order.userId ? 'SPECIFIC_USER' : 'ALL_CUSTOMERS',
+      audience: 'SPECIFIC_USER',
       category,
       priority,
       senderName: order.merchantName,
@@ -555,8 +555,8 @@ export class NotificationService {
         channel: 'IN_APP',
         title: `Novo Pedido Recebido #${order.code}`,
         message:
-          `🔔 Novo Pedido Recebido!\n\n` +
-          `Cliente: ${order.customerName} (${order.modality})\n` +
+          `Olá, ${order.merchantName}! 🔔\n\n` +
+          `Você recebeu um novo pedido de ${order.customerName} (${order.modality}).\n` +
           `Valor: ${formattedTotal}\n` +
           `Itens: ${order.items.map((it) => `${it.quantity}x ${it.productName}`).join(', ')}\n\n` +
           `Responda a confirmação de estoque em até 15 minutos pelo seu painel.`,
@@ -605,12 +605,12 @@ export class NotificationService {
         `Lembramos que o recolhimento das peças do Provador VIP da ${order.merchantName} está previsto para breve.`;
     }
 
-    return this.sendNotification({
+    const clientNotif = await this.sendNotification({
       eventType,
       recipientName: order.customerName,
       recipientPhone: order.customerPhone,
       recipientUserId: order.userId,
-      audience: order.userId ? 'SPECIFIC_USER' : 'ALL_CUSTOMERS',
+      audience: 'SPECIFIC_USER',
       category: 'PEDIDO',
       priority: 'HIGH',
       senderName: order.merchantName,
@@ -625,6 +625,29 @@ export class NotificationService {
       merchantId: order.merchantId,
       metadata: order.trialDetails
     });
+
+    if (eventType === 'TRIAL_REQUESTED') {
+      await this.sendNotification({
+        eventType: 'TRIAL_REQUESTED',
+        recipientName: order.merchantName,
+        recipientMerchantId: order.merchantId,
+        audience: 'SPECIFIC_MERCHANT',
+        category: 'PEDIDO',
+        priority: 'HIGH',
+        senderName: 'Sistema Achei Aqui',
+        senderRole: 'SISTEMA',
+        actionUrl: 'orders',
+        actionLabel: 'Ver Solicitação',
+        channel: 'IN_APP',
+        title: `Nova Solicitação de Provador VIP #${order.code}`,
+        message: `Olá, ${order.merchantName}! O cliente ${order.customerName} solicitou um Provador VIP para ${trialDate} às ${trialTime}.\nEndereço: ${order.customerAddress || 'Cachoeiras de Macacu'}.`,
+        orderId: order.id,
+        orderCode: order.code,
+        merchantId: order.merchantId
+      });
+    }
+
+    return clientNotif;
   }
 
   /**
@@ -665,12 +688,12 @@ export class NotificationService {
         `Te esperamos!`;
     }
 
-    return this.sendNotification({
+    const clientNotif = await this.sendNotification({
       eventType,
       recipientName: order.customerName,
       recipientPhone: order.customerPhone,
       recipientUserId: order.userId,
-      audience: order.userId ? 'SPECIFIC_USER' : 'ALL_CUSTOMERS',
+      audience: 'SPECIFIC_USER',
       category: 'PEDIDO',
       priority: 'HIGH',
       senderName: order.merchantName,
@@ -684,6 +707,80 @@ export class NotificationService {
       orderCode: order.code,
       merchantId: order.merchantId,
       metadata: order.serviceDetails
+    });
+
+    if (eventType === 'SERVICE_BOOKED') {
+      await this.sendNotification({
+        eventType: 'SERVICE_BOOKED',
+        recipientName: order.merchantName,
+        recipientMerchantId: order.merchantId,
+        audience: 'SPECIFIC_MERCHANT',
+        category: 'PEDIDO',
+        priority: 'HIGH',
+        senderName: 'Sistema Achei Aqui',
+        senderRole: 'SISTEMA',
+        actionUrl: 'orders',
+        actionLabel: 'Ver Agendamento',
+        channel: 'IN_APP',
+        title: `Novo Agendamento Recebido: ${serviceName}`,
+        message: `Olá, ${order.merchantName}! O cliente ${order.customerName} agendou o serviço "${serviceName}" com ${profName} para ${date} às ${time}.`,
+        orderId: order.id,
+        orderCode: order.code,
+        merchantId: order.merchantId
+      });
+    }
+
+    return clientNotif;
+  }
+
+  /**
+   * Notifica mensagens do Chat Interno entre Usuário e Lojista (ou vice-versa)
+   * Garantindo 100% de privacidade individual: apenas os dois participantes recebem.
+   */
+  static async notifyChatMessage(params: {
+    senderName: string;
+    senderRole: 'CLIENTE' | 'VENDEDOR' | 'MASTER';
+    recipientUserId?: string;
+    recipientMerchantId?: string;
+    recipientName: string;
+    orderTitle?: string;
+    codigoSubpedido?: string;
+    subpedidoId: string;
+    messageText: string;
+    isDirectProductChat?: boolean;
+  }): Promise<InAppNotification> {
+    const isToMerchant = params.senderRole === 'CLIENTE';
+    const title = isToMerchant
+      ? `💬 Nova Mensagem de ${params.senderName}`
+      : `💬 Resposta de ${params.senderName}`;
+
+    const snippet = params.messageText.length > 90
+      ? params.messageText.substring(0, 90) + '...'
+      : params.messageText;
+
+    const message = isToMerchant
+      ? `Olá, ${params.recipientName}!\n\nVocê recebeu uma nova mensagem de ${params.senderName} sobre "${params.orderTitle || 'atendimento'}":\n"${snippet}"`
+      : `Olá, ${params.recipientName}!\n\nA loja ${params.senderName} respondeu sua mensagem sobre "${params.orderTitle || 'atendimento'}":\n"${snippet}"`;
+
+    return this.sendNotification({
+      title,
+      message,
+      category: 'COMUNICADO',
+      priority: 'HIGH',
+      audience: isToMerchant ? 'SPECIFIC_MERCHANT' : 'SPECIFIC_USER',
+      recipientUserId: params.recipientUserId,
+      recipientMerchantId: params.recipientMerchantId,
+      recipientName: params.recipientName,
+      senderName: params.senderName,
+      senderRole: params.senderRole === 'CLIENTE' ? 'CLIENTE' : 'LOJISTA',
+      actionUrl: 'chat',
+      actionLabel: 'Abrir Conversa',
+      orderCode: params.codigoSubpedido,
+      channel: 'IN_APP',
+      metadata: {
+        subpedidoId: params.subpedidoId,
+        isDirectProductChat: params.isDirectProductChat
+      }
     });
   }
 

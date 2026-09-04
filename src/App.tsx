@@ -36,7 +36,12 @@ function MarketplaceApp() {
     openTermsModal,
     openPlansModal,
     openPolicyModal,
-    openUserManualModal
+    openUserManualModal,
+    promptAuthRequirement,
+    isAuthModalOpen,
+    authModalTab,
+    openAuthModal,
+    closeAuthModal
   } = useApp();
 
   // Navigation tabs in marketplace
@@ -60,6 +65,7 @@ function MarketplaceApp() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const handleOpenAuth = (initialTab: 'login' | 'register-customer' | 'register-merchant' = 'login') => {
+    openAuthModal(initialTab);
     setAuthInitialTab(initialTab);
     setAuthModalOpen(true);
   };
@@ -69,6 +75,14 @@ function MarketplaceApp() {
     modality: 'DELIVERY' | 'RETIRADA' | 'EXPERIMENTAÇÃO' = 'DELIVERY',
     variations: { [key: string]: string } = {}
   ) => {
+    if (!currentUser) {
+      promptAuthRequirement('COMPRA', {
+        title: product.name,
+        price: product.price,
+        merchantName: product.merchantName
+      });
+      return;
+    }
     setCheckoutProduct(product);
     setCheckoutModality(modality);
     setCheckoutVariations(variations);
@@ -76,6 +90,14 @@ function MarketplaceApp() {
   };
 
   const handleOpenBooking = (service: ServiceItem) => {
+    if (!currentUser) {
+      promptAuthRequirement('AGENDAMENTO', {
+        title: service.title,
+        merchantName: service.merchantName,
+        price: service.price
+      });
+      return;
+    }
     setSelectedService(service);
   };
 
@@ -83,22 +105,6 @@ function MarketplaceApp() {
     setSelectedStoreId(storeId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // EXCLUSIVIDADE: ACESSO SOMENTE COM LOGIN E SENHA
-  if (!currentUser) {
-    return (
-      <div className="relative min-h-screen">
-        <PlatformAccessGate />
-        {/* Toast */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center space-x-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   // If in Seller Portal
   if (currentEnvironment === 'SELLER_PORTAL') {
@@ -194,7 +200,7 @@ function MarketplaceApp() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onSelectProduct={(p) => setSelectedProduct(p)}
-              onSelectService={(s) => setSelectedService(s)}
+              onSelectService={(s) => handleOpenBooking(s)}
               onOpenCheckout={handleOpenCheckout}
               onOpenBooking={handleOpenBooking}
               onSelectOtherStore={(storeId) => {
@@ -211,7 +217,7 @@ function MarketplaceApp() {
           ) : (
             <HomeView
               onSelectProduct={(p) => setSelectedProduct(p)}
-              onSelectService={(s) => setSelectedService(s)}
+              onSelectService={(s) => handleOpenBooking(s)}
               onOpenCheckout={handleOpenCheckout}
               onOpenBooking={handleOpenBooking}
               onSelectStore={handleSelectStore}
@@ -304,15 +310,17 @@ function MarketplaceApp() {
                 Acesso & Modalidades
               </h5>
               <ul className="space-y-2 text-[11px]">
-                <li>
-                  <button
-                    onClick={() => handleOpenAuth('register-customer')}
-                    className="text-white font-bold hover:text-emerald-200 flex items-center gap-1.5"
-                  >
-                    <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Cadastre-se Gratuitamente</span>
-                  </button>
-                </li>
+                {!currentUser && (
+                  <li>
+                    <button
+                      onClick={() => handleOpenAuth('register-customer')}
+                      className="text-white font-bold hover:text-emerald-200 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Cadastre-se Gratuitamente</span>
+                    </button>
+                  </li>
+                )}
                 <li>
                   <button
                     onClick={() => handleOpenAuth('register-merchant')}
@@ -513,9 +521,12 @@ function MarketplaceApp() {
 
       {/* MODAL: AUTH / LOGIN / REGISTER */}
       <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        initialTab={authInitialTab}
+        isOpen={authModalOpen || isAuthModalOpen}
+        onClose={() => {
+          setAuthModalOpen(false);
+          closeAuthModal();
+        }}
+        initialTab={isAuthModalOpen ? authModalTab : authInitialTab}
       />
 
       {/* MODAL: SLIDE-OVER SHOPPING CART */}
@@ -612,10 +623,17 @@ function MarketplaceApp() {
                   onClick={() => {
                     setIsCartOpen(false);
                     if (cart.length > 0) {
+                      if (!currentUser) {
+                        promptAuthRequirement('COMPRA', {
+                          title: cart.length === 1 ? cart[0].product.name : `${cart.length} produtos na sacola`,
+                          price: cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+                        });
+                        return;
+                      }
                       handleOpenCheckout(cart[0].product);
                     }
                   }}
-                  className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2"
+                  className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <span>Finalizar Pedido</span>
                   <ArrowRight className="w-4 h-4" />
