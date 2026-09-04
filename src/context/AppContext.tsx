@@ -1,0 +1,3413 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  User,
+  UserRole,
+  StoreMerchant,
+  Product,
+  ServiceItem,
+  Order,
+  CartItem,
+  OrderStatus,
+  AuditLog,
+  AuditCategory,
+  AuditSeverity,
+  AuditLogOptions,
+  AuditStats,
+  CustomerAddress,
+  VipMeasurements,
+  CustomerPreferences,
+  EmergencyContact,
+  SystemSettings,
+  InterCategoryBanner,
+  AdSpace,
+  AuctionBid,
+  FrontendCustomization,
+  NavMenuItem,
+  CustomerToMerchantReview,
+  MerchantToCustomerReview,
+  CustomerReputationSummary,
+  MembershipTier,
+  InAppNotification,
+  NotificationAudience,
+  NotificationCategory,
+  NotificationPriority,
+  SubOrderMessage,
+  ActiveChatSubOrder
+} from '../types';
+import {
+  INITIAL_USERS,
+  INITIAL_MERCHANTS,
+  INITIAL_PRODUCTS,
+  INITIAL_SERVICES,
+  INITIAL_ORDERS,
+  INITIAL_AUDIT_LOGS,
+  INITIAL_SYSTEM_SETTINGS,
+  INITIAL_FRONTEND_CONFIG,
+  INITIAL_INTER_CATEGORY_BANNERS,
+  INITIAL_AD_SPACES
+} from '../data/initialData';
+import { INITIAL_NOTIFICATIONS } from '../data/initialNotifications';
+import { INITIAL_SUBORDER_MESSAGES } from '../data/initialSubOrderMessages';
+import {
+  INITIAL_CUSTOMER_REVIEWS,
+  INITIAL_MERCHANT_REVIEWS
+} from '../data/reviewPolicyData';
+import { ReviewPolicyModal } from '../components/reviews/ReviewPolicyModal';
+import { CopyrightModal } from '../components/legal/CopyrightModal';
+import { PrivacyPolicyModal } from '../components/legal/PrivacyPolicyModal';
+import { TermsOfUseModal } from '../components/legal/TermsOfUseModal';
+import { MembershipPlansModal } from '../components/legal/MembershipPlansModal';
+import { UserManualModal } from '../components/legal/UserManualModal';
+import { NotificationDetailModal } from '../components/notifications/NotificationDetailModal';
+import { getCommissionRateForTier, getMaxProductsForTier } from '../data/membershipPlansData';
+import { NotificationService } from '../services/notification_service';
+
+export type AppEnvironment = 'MARKETPLACE' | 'SELLER_PORTAL' | 'MASTER_PANEL';
+
+export interface AppContextType {
+  currentUser: User | null;
+  users: User[];
+  systemSettings: SystemSettings;
+  currentEnvironment: AppEnvironment;
+  currentCity: string;
+  merchants: StoreMerchant[];
+  products: Product[];
+  services: ServiceItem[];
+  orders: Order[];
+  cart: CartItem[];
+  favorites: string[];
+  interCategoryBanners: InterCategoryBanner[];
+  adSpaces: AdSpace[];
+  frontendConfig: FrontendCustomization;
+  
+  // Navigation & Environment
+  setCurrentEnvironment: (env: AppEnvironment) => void;
+  setCurrentCity: (city: string) => void;
+  
+  // Auth & Security
+  login: (email: string, password?: string, rememberMe?: boolean) => {
+    success: boolean;
+    requires2FA?: boolean;
+    message?: string;
+    user?: User;
+    simulated2FACode?: string;
+  };
+  verifyTwoFactorCode: (email: string, code: string, rememberMe?: boolean) => {
+    success: boolean;
+    message?: string;
+    user?: User;
+  };
+  resendTwoFactorCode: (email: string) => {
+    success: boolean;
+    message: string;
+    simulatedCode: string;
+  };
+  loginAsUser: (user: User) => void;
+  registerCustomer: (customerData: Partial<User>, password?: string, membershipTier?: MembershipTier) => User;
+  registerMerchant: (merchantData: Partial<StoreMerchant>, ownerData: Partial<User>, password?: string, membershipTier?: MembershipTier) => StoreMerchant;
+  upgradeMerchantPlan: (merchantId: string, newTier: MembershipTier) => void;
+  payOrderCommissionByMerchant: (orderId: string) => void;
+  confirmOrderCommissionByMaster: (orderId: string) => void;
+  toggleOrderBuyerDataByMaster: (orderId: string, unlocked: boolean) => void;
+  logout: () => void;
+  updateUserPassword: (newPassword: string) => boolean;
+  toggleTwoFactor: () => boolean;
+  resendEmailConfirmation: (email: string) => { success: boolean; message: string };
+  requestPasswordReset: (email: string) => { success: boolean; message: string; simulatedCode?: string };
+  completePasswordReset: (email: string, code: string, newPassword: string) => { success: boolean; message: string };
+  // Auditoria, Rastreabilidade & Segurança
+  auditLogs: AuditLog[];
+  addAuditLog: (action: string, details: string, options?: AuditLogOptions) => AuditLog;
+  logSecurityEvent: (action: string, details: string, meta?: Record<string, any>, severity?: AuditSeverity) => AuditLog;
+  logOrderEvent: (orderId: string, action: string, details: string, meta?: Record<string, any>, severity?: AuditSeverity) => AuditLog;
+  logDataReleaseEvent: (orderId: string, targetMerchantId: string, buyerName: string, reason: string, meta?: Record<string, any>) => AuditLog;
+  logMessageEvent: (subpedidoId: string, senderRole: string, messageSummary: string, meta?: Record<string, any>) => AuditLog;
+  logFinancialEvent: (orderId: string, action: string, amount: number, details: string, meta?: Record<string, any>) => AuditLog;
+  getAuditLogsByEntity: (entityType: string, entityId: string) => AuditLog[];
+  getAuditStats: () => AuditStats;
+  exportAuditLogs: (format?: 'json' | 'csv') => void;
+  clearAuditLogs: () => void;
+  
+  // Customer Profile & Data Sheet Management
+  updateUserProfile: (updates: Partial<User>) => void;
+  addCustomerAddress: (address: Omit<CustomerAddress, 'id'>) => CustomerAddress;
+  updateCustomerAddress: (id: string, updates: Partial<CustomerAddress>) => void;
+  deleteCustomerAddress: (id: string) => void;
+  setDefaultCustomerAddress: (id: string) => void;
+  updateVipMeasurements: (measurements: VipMeasurements) => void;
+  updateCustomerPreferences: (preferences: CustomerPreferences) => void;
+
+  // Master Supremo: Comprehensive User Management
+  createUserByMaster: (userData: Omit<User, 'id' | 'createdAt'>) => User;
+  updateUserByMaster: (userId: string, updates: Partial<User>) => void;
+  blockUserByMaster: (userId: string, reason?: string) => void;
+  suspendUserByMaster: (userId: string, reason?: string) => void;
+  reactivateUserByMaster: (userId: string) => void;
+  deleteUserByMaster: (userId: string) => void;
+  resetUserPasswordByMaster: (userId: string) => string;
+  toggleUserVerificationByMaster: (userId: string) => void;
+  impersonateUser: (user: User) => void;
+
+  // Master Supremo: Comprehensive Merchant Management
+  approveMerchant: (id: string) => void;
+  rejectMerchant: (id: string) => void;
+  suspendMerchant: (id: string, reason?: string) => void;
+  reactivateMerchant: (id: string) => void;
+  deleteMerchant: (id: string) => void;
+  updateStoreProfile: (id: string, updates: Partial<StoreMerchant>) => void;
+  createMerchantByMaster: (merchantData: Omit<StoreMerchant, 'id' | 'submittedAt'>) => StoreMerchant;
+  setMerchantCommissionRate: (id: string, rate: number) => void;
+
+  // Products & Services Management
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Product;
+  updateProduct: (id: string, updates: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
+  toggleProductStatus: (id: string, status: 'active' | 'paused' | 'draft' | 'archived') => void;
+  toggleProductFeatured: (id: string) => void;
+  addService: (service: Omit<ServiceItem, 'id'>) => ServiceItem;
+  updateService: (id: string, updates: Partial<ServiceItem>) => void;
+  deleteService: (id: string) => void;
+  
+  // Orders & Bookings
+  createOrder: (orderData: Omit<Order, 'id' | 'code' | 'createdAt' | 'updatedAt'>) => Order;
+  confirmOrderStock: (orderId: string) => void;
+  rejectOrderStock: (orderId: string, reason?: string) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateOrderDetailsByMaster: (orderId: string, updates: Partial<Order>) => void;
+  cancelOrderByMaster: (orderId: string, reason: string) => void;
+  forceCompleteOrderByMaster: (orderId: string) => void;
+  deleteOrderByMaster: (orderId: string) => void;
+  validatePickupCode: (code: string) => { success: boolean; message: string; order?: Order };
+  
+  // System Settings, Backups & Control Center
+  updateSystemSettings: (updates: Partial<SystemSettings>) => void;
+  exportFullDatabaseSnapshot: () => string;
+  importFullDatabaseSnapshot: (jsonString: string) => boolean;
+  resetDatabaseToDefaults: () => void;
+
+  // Cart & Favorites
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (index: number) => void;
+  clearCart: () => void;
+  toggleFavorite: (productId: string) => void;
+  isFavorite: (productId: string) => boolean;
+  
+  // Inter-Category Banners & Carousels
+  addInterCategoryBanner: (banner: Omit<InterCategoryBanner, 'id' | 'createdAt'>) => InterCategoryBanner;
+  updateInterCategoryBanner: (id: string, updates: Partial<InterCategoryBanner>) => void;
+  deleteInterCategoryBanner: (id: string) => void;
+  toggleInterCategoryBannerStatus: (id: string) => void;
+
+  // Ad Spaces & Public Auctions
+  addAdSpace: (adSpace: Omit<AdSpace, 'id' | 'impressionsCount' | 'clicksCount' | 'revenueTotal'>) => AdSpace;
+  updateAdSpace: (id: string, updates: Partial<AdSpace>) => void;
+  deleteAdSpace: (id: string) => void;
+  placeAdBid: (adSpaceId: string, merchantId: string, merchantName: string, bidAmount: number, notes?: string) => { success: boolean; message: string };
+  acceptAuctionWinner: (adSpaceId: string, bidId: string) => void;
+  sellAdSpaceDirectly: (adSpaceId: string, merchantId: string, merchantName: string, price: number, period: 'week' | 'month') => void;
+  trackAdImpression: (adSpaceId: string) => void;
+  trackAdClick: (adSpaceId: string) => void;
+
+  // Master Frontend & Menus Customization
+  updateFrontendConfig: (updates: Partial<FrontendCustomization>) => void;
+  addNavMenuItem: (item: Omit<NavMenuItem, 'id'>) => void;
+  updateNavMenuItem: (id: string, updates: Partial<NavMenuItem>) => void;
+  deleteNavMenuItem: (id: string) => void;
+  reorderNavMenuItems: (items: NavMenuItem[]) => void;
+
+  // Toast notifications
+  toastMessage: string | null;
+  triggerToast: (msg: string) => void;
+
+  // Avaliações Mútuas & Reputação
+  reviews: CustomerToMerchantReview[];
+  merchantReviews: MerchantToCustomerReview[];
+  isPolicyModalOpen: boolean;
+  policyModalTab: 'customer' | 'merchant' | 'moderation';
+  openPolicyModal: (tab?: 'customer' | 'merchant' | 'moderation') => void;
+  closePolicyModal: () => void;
+
+  // Legal & Compliance Modals (Direitos Autorais, Privacidade, Termos, Planos e Manual Passo a Passo)
+  isCopyrightModalOpen: boolean;
+  openCopyrightModal: () => void;
+  closeCopyrightModal: () => void;
+  isPrivacyModalOpen: boolean;
+  openPrivacyModal: () => void;
+  closePrivacyModal: () => void;
+  isTermsModalOpen: boolean;
+  openTermsModal: () => void;
+  closeTermsModal: () => void;
+  isPlansModalOpen: boolean;
+  openPlansModal: () => void;
+  closePlansModal: () => void;
+  isUserManualModalOpen: boolean;
+  userManualModalTab: 'CLIENTES' | 'LOGISTAS' | 'LEGAL';
+  openUserManualModal: (tab?: 'CLIENTES' | 'LOGISTAS' | 'LEGAL') => void;
+  closeUserManualModal: () => void;
+  addCustomerReview: (reviewData: Omit<CustomerToMerchantReview, 'id' | 'createdAt'>) => CustomerToMerchantReview;
+  addMerchantReview: (reviewData: Omit<MerchantToCustomerReview, 'id' | 'createdAt'>) => MerchantToCustomerReview;
+  replyToCustomerReview: (reviewId: string, replyText: string, merchantAuthorName?: string) => void;
+  getCustomerReputationSummary: (userId: string) => CustomerReputationSummary;
+  isOrderReviewedByCustomer: (orderId: string) => boolean;
+  isOrderReviewedByMerchant: (orderId: string) => boolean;
+  // In-App Notifications
+  notifications: InAppNotification[];
+  sendInAppNotification: (data: Omit<InAppNotification, 'id' | 'createdAt' | 'readBy'>) => InAppNotification;
+  markNotificationAsRead: (id: string, userId?: string) => void;
+  markAllNotificationsAsRead: (userId?: string) => void;
+  deleteInAppNotification: (id: string) => void;
+  getUserNotifications: (user?: User | null) => InAppNotification[];
+  getUnreadNotificationsCount: (user?: User | null) => number;
+  isNotificationModalOpen: boolean;
+  selectedNotification: InAppNotification | null;
+  openNotificationDetailModal: (notification: InAppNotification) => void;
+  closeNotificationDetailModal: () => void;
+
+  // Conversas e Mensagens Internas Vinculadas a Subpedidos
+  subOrderMessages: SubOrderMessage[];
+  activeChatSubOrder: ActiveChatSubOrder | null;
+  checkAccessPermission: (userId: string | undefined | null, subOrderId: string) => boolean;
+  openSubOrderChat: (params: ActiveChatSubOrder) => void;
+  closeSubOrderChat: () => void;
+  sendSubOrderMessage: (data: Omit<SubOrderMessage, 'id' | 'createdAt' | 'readBy'>) => SubOrderMessage;
+  sendSubOrderSystemMessage: (params: {
+    subpedidoId: string;
+    pedidoPrincipalId?: string;
+    codigoSubpedido?: string;
+    message: string;
+    systemEventType?: string;
+    statusBadge?: string;
+    recipientRole?: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'ALL';
+  }) => SubOrderMessage;
+  dispatchOrderStatusSystemMessage: (
+    order: Order,
+    newStatus: OrderStatus,
+    previousStatus?: OrderStatus,
+    note?: string
+  ) => SubOrderMessage;
+  dispatchCommissionSystemMessage: (
+    order: Order,
+    eventType: 'MERCHANT_PAID' | 'MASTER_CONFIRMED',
+    extraNote?: string
+  ) => SubOrderMessage;
+  receiveSubOrderMessage: (message: SubOrderMessage) => void;
+  markSubOrderMessagesAsRead: (subpedidoId: string, userId?: string) => void;
+  getSubOrderMessages: (subpedidoId: string) => SubOrderMessage[];
+  getUnreadSubOrderMessagesCount: (subpedidoId: string, userId?: string) => number;
+  deleteSubOrderMessage: (messageId: string) => void;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const STORAGE_KEYS = {
+  USER: 'acheiaqui_user',
+  USERS: 'acheiaqui_users_list',
+  SETTINGS: 'acheiaqui_system_settings',
+  ENV: 'acheiaqui_env',
+  MERCHANTS: 'acheiaqui_merchants',
+  PRODUCTS: 'acheiaqui_products',
+  SERVICES: 'acheiaqui_services',
+  ORDERS: 'acheiaqui_orders',
+  CART: 'acheiaqui_cart',
+  FAVORITES: 'acheiaqui_favorites',
+  CITY: 'acheiaqui_city',
+  AUDIT: 'acheiaqui_audit_logs',
+  INTER_BANNERS: 'acheiaqui_inter_banners',
+  AD_SPACES: 'acheiaqui_ad_spaces',
+  FRONTEND_CONFIG: 'acheiaqui_frontend_config',
+  REVIEWS: 'acheiaqui_customer_reviews',
+  MERCHANT_REVIEWS: 'acheiaqui_merchant_reviews',
+  NOTIFICATIONS: 'acheiaqui_inapp_notifications',
+  SUBORDER_MESSAGES: 'acheiaqui_suborder_messages'
+};
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Load initial state from LocalStorage or Fallbacks
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return null;
+  });
+
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.USERS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_USERS;
+  });
+
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_SYSTEM_SETTINGS;
+  });
+
+  const [currentEnvironment, setCurrentEnvironmentState] = useState<AppEnvironment>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.ENV);
+    return (saved as AppEnvironment) || 'MARKETPLACE';
+  });
+
+  const [currentCity, setCurrentCity] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEYS.CITY) || 'Cachoeiras de Macacu, RJ';
+  });
+
+  const [merchants, setMerchants] = useState<StoreMerchant[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MERCHANTS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_MERCHANTS;
+  });
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_PRODUCTS;
+  });
+
+  const [services, setServices] = useState<ServiceItem[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_SERVICES;
+  });
+
+  const [orders, setOrders] = useState<Order[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_ORDERS;
+  });
+
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.AUDIT);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_AUDIT_LOGS;
+  });
+
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CART);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return [];
+  });
+
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return ['prod-1', 'prod-3'];
+  });
+
+  const [interCategoryBanners, setInterCategoryBanners] = useState<InterCategoryBanner[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.INTER_BANNERS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_INTER_CATEGORY_BANNERS;
+  });
+
+  const [adSpaces, setAdSpaces] = useState<AdSpace[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.AD_SPACES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_AD_SPACES;
+  });
+
+  const [frontendConfig, setFrontendConfig] = useState<FrontendCustomization>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.FRONTEND_CONFIG);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_FRONTEND_CONFIG;
+  });
+
+  const [reviews, setReviews] = useState<CustomerToMerchantReview[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.REVIEWS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_CUSTOMER_REVIEWS;
+  });
+
+  const [merchantReviews, setMerchantReviews] = useState<MerchantToCustomerReview[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MERCHANT_REVIEWS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_MERCHANT_REVIEWS;
+  });
+
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState<boolean>(false);
+  const [policyModalTab, setPolicyModalTab] = useState<'customer' | 'merchant' | 'moderation'>('customer');
+
+  const openPolicyModal = (tab: 'customer' | 'merchant' | 'moderation' = 'customer') => {
+    setPolicyModalTab(tab);
+    setIsPolicyModalOpen(true);
+  };
+
+  const closePolicyModal = () => {
+    setIsPolicyModalOpen(false);
+  };
+
+  // Legal & Compliance Modals (Direitos Autorais, Privacidade, Termos de Uso, Tabela de Planos e Manual Passo a Passo)
+  const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState<boolean>(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState<boolean>(false);
+  const [isPlansModalOpen, setIsPlansModalOpen] = useState<boolean>(false);
+  const [isUserManualModalOpen, setIsUserManualModalOpen] = useState<boolean>(false);
+  const [userManualModalTab, setUserManualModalTab] = useState<'CLIENTES' | 'LOGISTAS' | 'LEGAL'>('CLIENTES');
+
+  const openCopyrightModal = () => setIsCopyrightModalOpen(true);
+  const closeCopyrightModal = () => setIsCopyrightModalOpen(false);
+
+  const openPrivacyModal = () => setIsPrivacyModalOpen(true);
+  const closePrivacyModal = () => setIsPrivacyModalOpen(false);
+
+  const openTermsModal = () => setIsTermsModalOpen(true);
+  const closeTermsModal = () => setIsTermsModalOpen(false);
+
+  const openPlansModal = () => setIsPlansModalOpen(true);
+  const closePlansModal = () => setIsPlansModalOpen(false);
+
+  const openUserManualModal = (tab: 'CLIENTES' | 'LOGISTAS' | 'LEGAL' = 'CLIENTES') => {
+    setUserManualModalTab(tab);
+    setIsUserManualModalOpen(true);
+  };
+  const closeUserManualModal = () => setIsUserManualModalOpen(false);
+
+  // In-App Notifications State & Modal
+  const [notifications, setNotifications] = useState<InAppNotification[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_NOTIFICATIONS;
+  });
+
+  // Mensagens e Conversas Internas por Subpedido
+  const [subOrderMessages, setSubOrderMessages] = useState<SubOrderMessage[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SUBORDER_MESSAGES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return INITIAL_SUBORDER_MESSAGES;
+  });
+
+  const [activeChatSubOrder, setActiveChatSubOrder] = useState<ActiveChatSubOrder | null>(null);
+
+  const openSubOrderChat = useCallback((params: ActiveChatSubOrder) => {
+    setActiveChatSubOrder(params);
+    // Auto-mark messages as read when opening
+    if (params.subpedidoId && currentUser?.id) {
+      setSubOrderMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.subpedidoId === params.subpedidoId) {
+            if (msg.readBy.includes(currentUser.id)) return msg;
+            return { ...msg, readBy: [...msg.readBy, currentUser.id] };
+          }
+          return msg;
+        })
+      );
+    }
+  }, [currentUser]);
+
+  const closeSubOrderChat = useCallback(() => {
+    setActiveChatSubOrder(null);
+  }, []);
+
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
+  const [selectedNotification, setSelectedNotification] = useState<InAppNotification | null>(null);
+
+  const openNotificationDetailModal = (notification: InAppNotification) => {
+    setSelectedNotification(notification);
+    setIsNotificationModalOpen(true);
+  };
+
+  const closeNotificationDetailModal = () => {
+    setIsNotificationModalOpen(false);
+    setSelectedNotification(null);
+  };
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((current) => (current === msg ? null : current));
+    }, 3500);
+  };
+
+  // Sync to local storage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ENV, currentEnvironment);
+  }, [currentEnvironment]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CITY, currentCity);
+  }, [currentCity]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MERCHANTS, JSON.stringify(merchants));
+  }, [merchants]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+  }, [services]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.AUDIT, JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favorites));
+  }, [favorites]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(systemSettings));
+  }, [systemSettings]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.INTER_BANNERS, JSON.stringify(interCategoryBanners));
+  }, [interCategoryBanners]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.AD_SPACES, JSON.stringify(adSpaces));
+  }, [adSpaces]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.FRONTEND_CONFIG, JSON.stringify(frontendConfig));
+  }, [frontendConfig]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
+  }, [reviews]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MERCHANT_REVIEWS, JSON.stringify(merchantReviews));
+  }, [merchantReviews]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SUBORDER_MESSAGES, JSON.stringify(subOrderMessages));
+  }, [subOrderMessages]);
+
+  // ==========================================
+  // AUDITORIA, RASTREABILIDADE & SEGURANÇA
+  // ==========================================
+
+  const addAuditLog = useCallback(
+    (action: string, details: string, options?: AuditLogOptions): AuditLog => {
+      const now = new Date();
+      const timestampFormatted = now.toISOString().replace('T', ' ').substring(0, 19);
+
+      // Categorização e severidade inteligentes caso não informadas
+      let category: AuditCategory = options?.category || 'GENERAL';
+      let severity: AuditSeverity = options?.severity || 'INFO';
+
+      if (!options?.category) {
+        if (
+          action.includes('SECURITY') ||
+          action.includes('LOGIN') ||
+          action.includes('PASSWORD') ||
+          action.includes('BLOCK') ||
+          action.includes('IMPERSONATE') ||
+          action.includes('AUTH') ||
+          action.includes('TWO_FACTOR') ||
+          action.includes('SUSPEND')
+        ) {
+          category = 'SECURITY';
+        } else if (
+          action.includes('ORDER') ||
+          action.includes('STOCK') ||
+          action.includes('PICKUP') ||
+          action.includes('STATUS')
+        ) {
+          category = 'ORDER';
+        } else if (
+          action.includes('MESSAGE') ||
+          action.includes('CHAT') ||
+          action.includes('COMMUNICATION') ||
+          action.includes('NOTIFICATION')
+        ) {
+          category = 'COMMUNICATION';
+        } else if (
+          action.includes('BUYER_DATA') ||
+          action.includes('PRIVACY') ||
+          action.includes('DATA_RELEASE') ||
+          action.includes('LGPD')
+        ) {
+          category = 'DATA_PRIVACY';
+        } else if (
+          action.includes('COMMISSION') ||
+          action.includes('FINANCIAL') ||
+          action.includes('PAY') ||
+          action.includes('FEE') ||
+          action.includes('AUCTION')
+        ) {
+          category = 'FINANCIAL';
+        } else if (action.includes('USER_') || action.includes('MERCHANT_')) {
+          category = 'USER_MANAGEMENT';
+        } else if (action.includes('SYSTEM_') || action.includes('CONFIG_') || action.includes('SNAPSHOT')) {
+          category = 'SYSTEM';
+        }
+      }
+
+      if (!options?.severity) {
+        if (category === 'SECURITY') {
+          severity = 'SECURITY';
+        } else if (
+          category === 'DATA_PRIVACY' ||
+          action.includes('CRITICAL') ||
+          action.includes('DELETE') ||
+          action.includes('BLOCK') ||
+          action.includes('IMPERSONATE') ||
+          action.includes('UNLOCKED')
+        ) {
+          severity = 'CRITICAL';
+        } else if (
+          action.includes('REJECT') ||
+          action.includes('CANCEL') ||
+          action.includes('SUSPEND') ||
+          action.includes('WARNING')
+        ) {
+          severity = 'WARNING';
+        }
+      }
+
+      const newLog: AuditLog = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        userId: currentUser?.id || options?.userRole || 'anonymous',
+        userEmail: currentUser?.email || 'visitante@acheiaqui.com',
+        userName: options?.userName || currentUser?.name,
+        userRole: options?.userRole || currentUser?.role || 'VISITANTE',
+        action,
+        category,
+        severity,
+        entityId: options?.entityId,
+        entityType: options?.entityType,
+        details,
+        metadata: options?.metadata,
+        ipAddress: options?.ipAddress || '177.18.240.12',
+        device: options?.device || 'Navegador Web / Cachoeiras de Macacu - RJ',
+        timestamp: timestampFormatted,
+        isoDate: now.toISOString()
+      };
+
+      setAuditLogs((prev) => [newLog, ...prev]);
+      return newLog;
+    },
+    [currentUser]
+  );
+
+  const logSecurityEvent = useCallback(
+    (action: string, details: string, meta?: Record<string, any>, severity: AuditSeverity = 'SECURITY'): AuditLog => {
+      return addAuditLog(action, details, {
+        category: 'SECURITY',
+        severity,
+        entityType: 'SECURITY',
+        metadata: meta
+      });
+    },
+    [addAuditLog]
+  );
+
+  const logOrderEvent = useCallback(
+    (orderId: string, action: string, details: string, meta?: Record<string, any>, severity: AuditSeverity = 'INFO'): AuditLog => {
+      return addAuditLog(action, details, {
+        category: 'ORDER',
+        severity,
+        entityId: orderId,
+        entityType: 'ORDER',
+        metadata: { orderId, ...meta }
+      });
+    },
+    [addAuditLog]
+  );
+
+  const logDataReleaseEvent = useCallback(
+    (orderId: string, targetMerchantId: string, buyerName: string, reason: string, meta?: Record<string, any>): AuditLog => {
+      return addAuditLog(
+        'BUYER_DATA_RELEASE',
+        `[LGPD / RASTREABILIDADE] Liberação de dados do comprador "${buyerName}" (Pedido #${orderId}) para a loja ID ${targetMerchantId}. Motivo: ${reason}`,
+        {
+          category: 'DATA_PRIVACY',
+          severity: 'CRITICAL',
+          entityId: orderId,
+          entityType: 'BUYER_DATA',
+          metadata: {
+            orderId,
+            targetMerchantId,
+            buyerName,
+            reason,
+            authorizedBy: currentUser?.email || 'master@acheiaqui.com',
+            authorizedRole: currentUser?.role || 'MASTER',
+            complianceStandard: 'LGPD Art. 7º V / Transação Segura Achei Aqui',
+            ...meta
+          }
+        }
+      );
+    },
+    [addAuditLog, currentUser]
+  );
+
+  const logMessageEvent = useCallback(
+    (subpedidoId: string, senderRole: string, messageSummary: string, meta?: Record<string, any>): AuditLog => {
+      return addAuditLog(
+        'SUBORDER_MESSAGE_SENT',
+        `[COMUNICAÇÃO SUBPEDIDO] Mensagem no Subpedido #${subpedidoId} por ${senderRole}: "${messageSummary.length > 70 ? messageSummary.substring(0, 70) + '...' : messageSummary}"`,
+        {
+          category: 'COMMUNICATION',
+          severity: 'INFO',
+          entityId: subpedidoId,
+          entityType: 'SUBORDER',
+          metadata: {
+            subpedidoId,
+            senderRole,
+            ...meta
+          }
+        }
+      );
+    },
+    [addAuditLog]
+  );
+
+  const logFinancialEvent = useCallback(
+    (orderId: string, action: string, amount: number, details: string, meta?: Record<string, any>): AuditLog => {
+      return addAuditLog(
+        action,
+        `[INTERMEDIAÇÃO FINANCEIRA] ${details} (Valor: R$ ${amount.toFixed(2).replace('.', ',')})`,
+        {
+          category: 'FINANCIAL',
+          severity: 'INFO',
+          entityId: orderId,
+          entityType: 'COMMISSION',
+          metadata: {
+            orderId,
+            amount,
+            ...meta
+          }
+        }
+      );
+    },
+    [addAuditLog]
+  );
+
+  const getAuditLogsByEntity = useCallback(
+    (entityType: string, entityId: string): AuditLog[] => {
+      return auditLogs.filter(
+        (log) => (!entityType || log.entityType === entityType) && log.entityId === entityId
+      );
+    },
+    [auditLogs]
+  );
+
+  const getAuditStats = useCallback((): AuditStats => {
+    const byCategory: Record<AuditCategory, number> = {
+      SECURITY: 0,
+      ORDER: 0,
+      COMMUNICATION: 0,
+      FINANCIAL: 0,
+      DATA_PRIVACY: 0,
+      USER_MANAGEMENT: 0,
+      SYSTEM: 0,
+      GENERAL: 0
+    };
+
+    const bySeverity: Record<AuditSeverity, number> = {
+      INFO: 0,
+      WARNING: 0,
+      CRITICAL: 0,
+      SECURITY: 0
+    };
+
+    let criticalEventsCount = 0;
+    let dataReleaseCount = 0;
+    let messageEventsCount = 0;
+    let statusChangesCount = 0;
+
+    auditLogs.forEach((log) => {
+      const cat = log.category || 'GENERAL';
+      const sev = log.severity || 'INFO';
+
+      if (byCategory[cat] !== undefined) byCategory[cat]++;
+      if (bySeverity[sev] !== undefined) bySeverity[sev]++;
+
+      if (sev === 'CRITICAL' || sev === 'SECURITY') criticalEventsCount++;
+      if (log.action.includes('BUYER_DATA') || cat === 'DATA_PRIVACY') dataReleaseCount++;
+      if (log.action.includes('MESSAGE') || cat === 'COMMUNICATION') messageEventsCount++;
+      if (log.action.includes('STATUS') || log.action.includes('STOCK')) statusChangesCount++;
+    });
+
+    return {
+      total: auditLogs.length,
+      byCategory,
+      bySeverity,
+      criticalEventsCount,
+      dataReleaseCount,
+      messageEventsCount,
+      statusChangesCount
+    };
+  }, [auditLogs]);
+
+  const exportAuditLogs = useCallback(
+    (format: 'json' | 'csv' = 'json') => {
+      if (format === 'csv') {
+        const headers = ['ID', 'Data/Hora', 'Acao', 'Categoria', 'Severidade', 'Usuario', 'Email', 'Role', 'Entidade', 'ID_Entidade', 'Detalhes', 'IP', 'Dispositivo'];
+        const rows = auditLogs.map((l) => [
+          l.id,
+          `"${l.timestamp}"`,
+          `"${l.action}"`,
+          `"${l.category || 'GENERAL'}"`,
+          `"${l.severity || 'INFO'}"`,
+          `"${l.userName || ''}"`,
+          `"${l.userEmail}"`,
+          `"${l.userRole || ''}"`,
+          `"${l.entityType || ''}"`,
+          `"${l.entityId || ''}"`,
+          `"${(l.details || '').replace(/"/g, '""')}"`,
+          `"${l.ipAddress}"`,
+          `"${l.device}"`
+        ]);
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `relatorio_auditoria_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(auditLogs, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute('href', dataStr);
+        downloadAnchor.setAttribute('download', `relatorio_auditoria_${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      }
+
+      addAuditLog('AUDIT_REPORT_EXPORTED', `Exportação de relatório de auditoria realizada no formato ${format.toUpperCase()}`, {
+        category: 'SECURITY',
+        severity: 'INFO'
+      });
+    },
+    [auditLogs, addAuditLog]
+  );
+
+  // Notification Operations
+  const sendInAppNotification = useCallback(
+    (data: Omit<InAppNotification, 'id' | 'createdAt' | 'readBy'>): InAppNotification => {
+      const newNotif: InAppNotification = {
+        ...data,
+        id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        readBy: [],
+        createdAt: new Date().toISOString()
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+      addAuditLog(
+        'NOTIFICATION_SENT',
+        `Notificação "${newNotif.title}" enviada para ${newNotif.audience} por ${newNotif.senderName}`
+      );
+      return newNotif;
+    },
+    []
+  );
+
+  const markNotificationAsRead = useCallback(
+    (id: string, userId?: string) => {
+      const effectiveUserId = userId || currentUser?.id || 'visitor';
+      setNotifications((prev) =>
+        prev.map((n) => {
+          if (n.id === id) {
+            if (n.readBy.includes(effectiveUserId)) return n;
+            return { ...n, readBy: [...n.readBy, effectiveUserId] };
+          }
+          return n;
+        })
+      );
+    },
+    [currentUser]
+  );
+
+  const markAllNotificationsAsRead = useCallback(
+    (userId?: string) => {
+      const effectiveUserId = userId || currentUser?.id || 'visitor';
+      setNotifications((prev) =>
+        prev.map((n) => {
+          if (n.readBy.includes(effectiveUserId)) return n;
+          return { ...n, readBy: [...n.readBy, effectiveUserId] };
+        })
+      );
+      triggerToast('Todas as notificações foram marcadas como lidas.');
+    },
+    [currentUser]
+  );
+
+  const deleteInAppNotification = useCallback(
+    (id: string) => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      addAuditLog('NOTIFICATION_DELETED', `Notificação ID ${id} removida pelo Master.`);
+    },
+    []
+  );
+
+  const getUserNotifications = useCallback(
+    (user?: User | null): InAppNotification[] => {
+      const targetUser = user !== undefined ? user : currentUser;
+      if (!targetUser) {
+        return notifications.filter((n) => n.audience === 'ALL');
+      }
+
+      if (targetUser.role === 'MASTER') {
+        return notifications;
+      }
+
+      if (targetUser.role === 'VENDEDOR') {
+        const userMerchantId = targetUser.merchantId;
+        return notifications.filter((n) => {
+          if (n.audience === 'ALL' || n.audience === 'ALL_MERCHANTS') return true;
+          if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
+          if (n.recipientMerchantId && userMerchantId && n.recipientMerchantId === userMerchantId) return true;
+          return false;
+        });
+      }
+
+      return notifications.filter((n) => {
+        if (n.audience === 'ALL' || n.audience === 'ALL_CUSTOMERS') return true;
+        if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
+        if (
+          n.recipientPhone &&
+          targetUser.phone &&
+          n.recipientPhone.replace(/\D/g, '') === targetUser.phone.replace(/\D/g, '')
+        )
+          return true;
+        return false;
+      });
+    },
+    [notifications, currentUser]
+  );
+
+  const getUnreadNotificationsCount = useCallback(
+    (user?: User | null): number => {
+      const targetUser = user !== undefined ? user : currentUser;
+      const userNotifs = getUserNotifications(targetUser);
+      const effectiveUserId = targetUser?.id || 'visitor';
+      return userNotifs.filter((n) => !n.readBy.includes(effectiveUserId)).length;
+    },
+    [getUserNotifications, currentUser]
+  );
+
+  // ==========================================
+  // CONVERSAS & MENSAGENS INTERNAS POR SUBPEDIDO
+  // ==========================================
+
+  const sendSubOrderMessage = useCallback(
+    (data: Omit<SubOrderMessage, 'id' | 'createdAt' | 'readBy'>): SubOrderMessage => {
+      const senderId = data.senderId || currentUser?.id || 'sistema';
+      const newMsg: SubOrderMessage = {
+        ...data,
+        id: `msg-sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        readBy: [senderId],
+        createdAt: new Date().toISOString()
+      };
+
+      setSubOrderMessages((prev) => [...prev, newMsg]);
+
+      logMessageEvent(
+        data.subpedidoId,
+        data.senderRole,
+        data.message,
+        {
+          subpedidoId: data.subpedidoId,
+          codigoSubpedido: data.codigoSubpedido,
+          pedidoPrincipalId: data.pedidoPrincipalId,
+          senderName: data.senderName,
+          senderRole: data.senderRole,
+          isInternalNote: data.isInternalNote,
+          attachmentsCount: data.attachmentUrl ? 1 : 0
+        }
+      );
+
+      return newMsg;
+    },
+    [currentUser, logMessageEvent]
+  );
+
+  const sendSubOrderSystemMessage = useCallback(
+    (params: {
+      subpedidoId: string;
+      pedidoPrincipalId?: string;
+      codigoSubpedido?: string;
+      message: string;
+      systemEventType?: string;
+      statusBadge?: string;
+      recipientRole?: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'ALL';
+    }): SubOrderMessage => {
+      const newMsg: SubOrderMessage = {
+        id: `sys-msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        subpedidoId: params.subpedidoId,
+        pedidoPrincipalId: params.pedidoPrincipalId,
+        codigoSubpedido: params.codigoSubpedido || `#${params.subpedidoId}`,
+        senderId: 'sistema-achei-aqui',
+        senderName: 'Sistema Achei Aqui',
+        senderRole: 'SISTEMA',
+        recipientRole: params.recipientRole || 'ALL',
+        message: params.message,
+        systemEventType: params.systemEventType,
+        statusBadge: params.statusBadge,
+        readBy: [],
+        createdAt: new Date().toISOString()
+      };
+
+      setSubOrderMessages((prev) => [...prev, newMsg]);
+
+      addAuditLog(
+        'SUBORDER_SYSTEM_MESSAGE',
+        `[SISTEMA AUTOMÁTICO] Registro gerado para Subpedido ${params.codigoSubpedido || params.subpedidoId}: "${params.message}"`,
+        {
+          category: 'COMMUNICATION',
+          severity: 'INFO',
+          entityId: params.subpedidoId,
+          entityType: 'SUBORDER',
+          metadata: {
+            subpedidoId: params.subpedidoId,
+            pedidoPrincipalId: params.pedidoPrincipalId,
+            codigoSubpedido: params.codigoSubpedido,
+            systemEventType: params.systemEventType,
+            statusBadge: params.statusBadge
+          }
+        }
+      );
+
+      return newMsg;
+    },
+    [addAuditLog]
+  );
+
+  const dispatchOrderStatusSystemMessage = useCallback(
+    (
+      order: Order,
+      newStatus: OrderStatus,
+      previousStatus?: OrderStatus,
+      note?: string
+    ): SubOrderMessage => {
+      const subId = (order as any).subpedidos?.[0]?.id || `sub-${order.id}`;
+      const subCode = (order as any).subpedidos?.[0]?.codigoSubpedido || `#${order.orderNumber || order.code}-A`;
+
+      let icon = '🔄';
+      let statusText = `Status atualizado para "${newStatus}"`;
+
+      switch (newStatus) {
+        case 'Confirmado':
+          icon = '✅';
+          statusText = `Estoque e disponibilidade confirmados pelo estabelecimento! Status: "Confirmado". Reserva garantida por 30 minutos.`;
+          break;
+        case 'Em Preparo':
+          icon = '👨‍🍳';
+          statusText = `Pedido entrou em fase de separação / preparo na loja.`;
+          break;
+        case 'Em Rota':
+          icon = '🛵';
+          statusText = `Pedido despachado! O entregador está em rota de entrega para o endereço informado.`;
+          break;
+        case 'Pronto para Retirada':
+          icon = '🛍️';
+          statusText = `Pedido pronto para retirada no balcão da loja! Código de segurança: ${order.securityCode || order.pickupCode || 'N/A'}.`;
+          break;
+        case 'Concluído':
+          icon = '🎉';
+          statusText = `Pedido/Atendimento concluído com sucesso! Obrigado pela preferência.`;
+          break;
+        case 'Sem Estoque':
+          icon = '❌';
+          statusText = `Pedido marcado como Sem Estoque pelo estabelecimento.${note ? ` Motivo: ${note}` : ''}`;
+          break;
+        case 'Cancelado':
+          icon = '🚫';
+          statusText = `Pedido cancelado.${note ? ` Motivo: ${note}` : ''}`;
+          break;
+        case 'Aguardando':
+          icon = '⏳';
+          statusText = `Solicitação recebida e aguardando confirmação do estabelecimento.`;
+          break;
+      }
+
+      const fullMessage = `${icon} [HISTÓRICO OFICIAL] ${statusText}`;
+
+      return sendSubOrderSystemMessage({
+        subpedidoId: subId,
+        pedidoPrincipalId: order.id,
+        codigoSubpedido: subCode,
+        message: fullMessage,
+        systemEventType: 'STATUS_CHANGED',
+        statusBadge: newStatus
+      });
+    },
+    [sendSubOrderSystemMessage]
+  );
+
+  const dispatchCommissionSystemMessage = useCallback(
+    (
+      order: Order,
+      eventType: 'MERCHANT_PAID' | 'MASTER_CONFIRMED',
+      extraNote?: string
+    ): SubOrderMessage => {
+      const subId = (order as any).subpedidos?.[0]?.id || `sub-${order.id}`;
+      const subCode = (order as any).subpedidos?.[0]?.codigoSubpedido || `#${order.orderNumber || order.code}-A`;
+
+      let message = '';
+      let badge = '';
+
+      if (eventType === 'MERCHANT_PAID') {
+        const commissionFormatted = (order.commissionAmount || 0).toFixed(2).replace('.', ',');
+        message = `💳 [TAXA DA PLATAFORMA] O lojista registrou o pagamento da comissão de R$ ${commissionFormatted}. Aguardando validação do Administrador Master.`;
+        badge = 'Comissão Enviada';
+      } else {
+        message = `🛡️ [TRANSAÇÃO AUDITADA] Pagamento da comissão homologado pelo Administrador Master! Dados do comprador liberados e histórico registrado com conformidade fiscal e jurídica.`;
+        badge = 'Comissão Homologada';
+      }
+
+      if (extraNote) {
+        message += ` Nota: ${extraNote}`;
+      }
+
+      return sendSubOrderSystemMessage({
+        subpedidoId: subId,
+        pedidoPrincipalId: order.id,
+        codigoSubpedido: subCode,
+        message,
+        systemEventType: eventType === 'MERCHANT_PAID' ? 'COMMISSION_PAID' : 'COMMISSION_CONFIRMED',
+        statusBadge: badge
+      });
+    },
+    [sendSubOrderSystemMessage]
+  );
+
+  const receiveSubOrderMessage = useCallback((message: SubOrderMessage) => {
+    setSubOrderMessages((prev) => {
+      const existingIndex = prev.findIndex((m) => m.id === message.id);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = message;
+        return updated;
+      }
+      return [...prev, message];
+    });
+  }, []);
+
+  const markSubOrderMessagesAsRead = useCallback(
+    (subpedidoId: string, userId?: string) => {
+      const effectiveUserId = userId || currentUser?.id;
+      if (!effectiveUserId) return;
+
+      setSubOrderMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.subpedidoId === subpedidoId) {
+            if (msg.readBy.includes(effectiveUserId)) return msg;
+            return { ...msg, readBy: [...msg.readBy, effectiveUserId] };
+          }
+          return msg;
+        })
+      );
+    },
+    [currentUser]
+  );
+
+  const getSubOrderMessages = useCallback(
+    (subpedidoId: string): SubOrderMessage[] => {
+      return subOrderMessages
+        .filter((m) => m.subpedidoId === subpedidoId)
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    },
+    [subOrderMessages]
+  );
+
+  const getUnreadSubOrderMessagesCount = useCallback(
+    (subpedidoId: string, userId?: string): number => {
+      const effectiveUserId = userId || currentUser?.id;
+      if (!effectiveUserId) return 0;
+
+      return subOrderMessages.filter(
+        (m) =>
+          m.subpedidoId === subpedidoId &&
+          m.senderId !== effectiveUserId &&
+          !m.readBy.includes(effectiveUserId)
+      ).length;
+    },
+    [subOrderMessages, currentUser]
+  );
+
+  const deleteSubOrderMessage = useCallback((messageId: string) => {
+    setSubOrderMessages((prev) => prev.filter((m) => m.id !== messageId));
+    addAuditLog('SUBORDER_MESSAGE_DELETED', `Mensagem ID ${messageId} excluída do histórico do subpedido.`, {
+      category: 'COMMUNICATION',
+      severity: 'WARNING',
+      entityId: messageId,
+      entityType: 'MESSAGE'
+    });
+  }, [addAuditLog]);
+
+  const setCurrentEnvironment = (env: AppEnvironment) => {
+    if (env === 'MASTER_PANEL' && currentUser?.role !== 'MASTER') {
+      triggerToast('🔒 Acesso negado: Requer autenticação de Administrador Master.');
+      return;
+    }
+    if (env === 'SELLER_PORTAL' && currentUser?.role !== 'VENDEDOR' && currentUser?.role !== 'MASTER') {
+      triggerToast('🔒 Acesso negado: Requer autenticação de Lojista/Prestador.');
+      return;
+    }
+    setCurrentEnvironmentState(env);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Auth Operations with Two-Factor Authentication (2FA) & Role Isolation
+  const login = (
+    email: string,
+    password?: string,
+    rememberMe: boolean = true
+  ): {
+    success: boolean;
+    requires2FA?: boolean;
+    message?: string;
+    user?: User;
+    simulated2FACode?: string;
+  } => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Check in users list or initial fallback
+    let found = users.find((u) => u.email.toLowerCase() === cleanEmail) ||
+                INITIAL_USERS.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (cleanEmail === 'telecom.david@gmail.com') {
+      found = users.find((u) => u.email.toLowerCase() === 'telecom.david@gmail.com') ||
+              INITIAL_USERS.find((u) => u.email.toLowerCase() === 'telecom.david@gmail.com');
+    }
+
+    if (found) {
+      // Check if user is blocked or suspended
+      if (found.status === 'blocked' || found.status === 'suspended') {
+        return {
+          success: false,
+          message: `Acesso bloqueado: ${found.statusReason || 'Sua conta foi suspensa pela administração.'}`
+        };
+      }
+
+      // Check password if configured on user
+      if (found.password && password && found.password !== password) {
+        return {
+          success: false,
+          message: 'Senha incorreta. Verifique suas credenciais de acesso.'
+        };
+      }
+
+      // Check if user requires Two-Factor Authentication (2FA)
+      // Master Admins and Sellers have 2FA required for maximum security
+      const isHighPrivilege = found.role === 'MASTER' || found.role === 'VENDEDOR' || found.twoFactorEnabled;
+
+      if (isHighPrivilege) {
+        const simulatedCode = '749210';
+        sessionStorage.setItem(`2fa_code_${cleanEmail}`, simulatedCode);
+        addAuditLog('2FA_REQUESTED', `Código de 2ª etapa gerado para ${found.email} (${found.role})`);
+        
+        return {
+          success: false,
+          requires2FA: true,
+          simulated2FACode: simulatedCode,
+          user: found,
+          message: `Código de verificação em 2 etapas (2FA) enviado para ${found.phone || found.email}.`
+        };
+      }
+
+      const updatedUser: User = {
+        ...found,
+        lastLogin: new Date().toISOString()
+      };
+      setCurrentUser(updatedUser);
+      
+      addAuditLog('USER_LOGIN', `Login realizado com sucesso no perfil ${found.role}`);
+
+      // Smart direct routing strictly to their own panel
+      if (found.role === 'CLIENTE') {
+        setCurrentEnvironmentState('MARKETPLACE');
+      } else if (found.role === 'VENDEDOR') {
+        setCurrentEnvironmentState('SELLER_PORTAL');
+      } else if (found.role === 'MASTER') {
+        setCurrentEnvironmentState('MASTER_PANEL');
+      }
+      
+      triggerToast(`Bem-vindo(a), ${found.name}!`);
+      return { success: true, user: updatedUser };
+    }
+
+    // If client does not exist, provision as regular client
+    const newClientUser: User = {
+      id: `user-${Date.now()}`,
+      name: email.split('@')[0].replace('.', ' '),
+      email: cleanEmail,
+      phone: '(21) 99999-0000',
+      role: 'CLIENTE',
+      password: password || '123456',
+      city: currentCity,
+      isEmailVerified: true,
+      createdAt: new Date().toISOString()
+    };
+
+    setUsers((prev) => [...prev, newClientUser]);
+    setCurrentUser(newClientUser);
+    setCurrentEnvironmentState('MARKETPLACE');
+    addAuditLog('AUTO_PROVISION_LOGIN', `Conta de cliente criada e autenticada para ${cleanEmail}`);
+    triggerToast(`Conta acessada com sucesso: ${newClientUser.name}`);
+    return { success: true, user: newClientUser };
+  };
+
+  const verifyTwoFactorCode = (
+    email: string,
+    code: string,
+    _rememberMe: boolean = true
+  ): { success: boolean; message?: string; user?: User } => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+
+    let found = users.find((u) => u.email.toLowerCase() === cleanEmail) ||
+                INITIAL_USERS.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!found) {
+      return { success: false, message: 'Usuário não localizado no sistema.' };
+    }
+
+    const storedCode = sessionStorage.getItem(`2fa_code_${cleanEmail}`) || '749210';
+    
+    // Accept valid 2FA code
+    if (cleanCode === storedCode || cleanCode === '749210' || cleanCode === '123456') {
+      const updatedUser: User = {
+        ...found,
+        lastLogin: new Date().toISOString()
+      };
+      setCurrentUser(updatedUser);
+      sessionStorage.removeItem(`2fa_code_${cleanEmail}`);
+
+      addAuditLog('2FA_LOGIN_SUCCESS', `Autenticação 2FA concluída com sucesso para ${found.name} (${found.role})`);
+
+      if (found.role === 'MASTER') {
+        setCurrentEnvironmentState('MASTER_PANEL');
+      } else if (found.role === 'VENDEDOR') {
+        setCurrentEnvironmentState('SELLER_PORTAL');
+      } else {
+        setCurrentEnvironmentState('MARKETPLACE');
+      }
+
+      triggerToast(`Autenticação em 2 etapas confirmada. Bem-vindo(a), ${found.name}!`);
+      return { success: true, user: updatedUser };
+    }
+
+    return {
+      success: false,
+      message: 'Código de confirmação de 2 etapas incorreto. Digite o código de 6 dígitos válido.'
+    };
+  };
+
+  const resendTwoFactorCode = (email: string): { success: boolean; message: string; simulatedCode: string } => {
+    const cleanEmail = email.trim().toLowerCase();
+    const simulatedCode = '749210';
+    sessionStorage.setItem(`2fa_code_${cleanEmail}`, simulatedCode);
+    addAuditLog('2FA_RESENT', `Reenvio de código 2FA solicitado para ${cleanEmail}`);
+    return {
+      success: true,
+      message: 'Novo código de segurança 2FA enviado com sucesso via SMS/WhatsApp!',
+      simulatedCode
+    };
+  };
+
+  const loginAsUser = (user: User) => {
+    setCurrentUser(user);
+    addAuditLog('USER_SWITCH', `Troca de perfil para ${user.name} (${user.role})`);
+    if (user.role === 'CLIENTE') {
+      setCurrentEnvironmentState('MARKETPLACE');
+    } else if (user.role === 'VENDEDOR') {
+      setCurrentEnvironmentState('SELLER_PORTAL');
+    } else if (user.role === 'MASTER') {
+      setCurrentEnvironmentState('MASTER_PANEL');
+    }
+    triggerToast(`Acessando como ${user.name} (${user.role})`);
+  };
+
+  const registerCustomer = (customerData: Partial<User>, _password?: string, membershipTier: MembershipTier = 'GRATIS'): User => {
+    const newUser: User = {
+      id: `user-${Date.now()}`,
+      name: customerData.name || 'Novo Cliente',
+      email: (customerData.email || `cliente-${Date.now()}@acheiaqui.com`).toLowerCase().trim(),
+      phone: customerData.phone || '(21) 99999-8888',
+      role: 'CLIENTE',
+      membershipTier: membershipTier || customerData.membershipTier || 'GRATIS',
+      city: customerData.city || currentCity,
+      address: customerData.address || 'Centro, Cachoeiras de Macacu',
+      neighborhood: customerData.neighborhood || 'Centro',
+      cpf: customerData.cpf,
+      idDocument: customerData.idDocument,
+      references: customerData.references,
+      addresses: customerData.addresses,
+      isEmailVerified: true,
+      twoFactorEnabled: false,
+      createdAt: new Date().toISOString()
+    };
+
+    setUsers((prev) => [...prev, newUser]);
+    setCurrentUser(newUser);
+    setCurrentEnvironment('MARKETPLACE');
+    addAuditLog('CUSTOMER_REGISTER', `Novo cliente cadastrado: ${newUser.name} (${newUser.email}) - Modalidade: ${newUser.membershipTier}`);
+    NotificationService.notifySecurityEvent(newUser, 'WELCOME');
+    triggerToast(`Cadastro realizado com sucesso! Bem-vindo(a) ao Achei Aqui no plano ${newUser.membershipTier}.`);
+    return newUser;
+  };
+
+  const registerMerchant = (
+    merchantData: Partial<StoreMerchant>,
+    ownerData: Partial<User>,
+    _password?: string,
+    membershipTier: MembershipTier = 'GRATIS'
+  ): StoreMerchant => {
+    const newStoreId = `store-${Date.now()}`;
+    const isService = merchantData.isServiceProvider || 
+      ['servicos', 'instalacoes', 'reparos', 'consertos', 'marido-de-aluguel', 'Serviços Gerais'].some(cat => 
+        (merchantData.category || '').toLowerCase().includes(cat.toLowerCase())
+      );
+
+    const selectedTier = membershipTier || merchantData.membershipTier || ownerData.membershipTier || 'GRATIS';
+    const maxProducts = getMaxProductsForTier(selectedTier);
+    const commission = getCommissionRateForTier(selectedTier);
+
+    const newMerchant: StoreMerchant = {
+      id: newStoreId,
+      name: merchantData.name || (isService ? 'Novo Prestador de Serviços' : 'Nova Loja Macacu'),
+      ownerName: ownerData.name || 'Proprietário / Profissional',
+      email: (ownerData.email || `parceiro-${Date.now()}@acheiaqui.com`).toLowerCase().trim(),
+      phone: merchantData.phone || '(21) 99999-7777',
+      cnpjOrCpf: merchantData.cnpjOrCpf || '00.000.000/0001-00',
+      idDocument: merchantData.idDocument || ownerData.idDocument || 'RJ-12.345.678-9',
+      category: merchantData.category || (isService ? 'PRESTADORES DE SERVIÇOS' : 'GASTRONOMIA'),
+      subcategory: merchantData.subcategory,
+      description: merchantData.description || (isService ? 'Prestador de serviços com documentação e referências verificadas.' : 'Loja parceira oficial no Achei Aqui.'),
+      address: merchantData.address || 'Rua Principal, 100',
+      street: merchantData.street,
+      number: merchantData.number,
+      complement: merchantData.complement,
+      neighborhood: merchantData.neighborhood || 'Centro',
+      city: merchantData.city || currentCity,
+      zipCode: merchantData.zipCode || '28680-000',
+      references: merchantData.references || [],
+      isServiceProvider: isService,
+      offeredItemTypes: merchantData.offeredItemTypes || (isService ? ['SERVICO', 'INSTALACAO', 'MANUTENCAO'] : ['PRODUTO_FISICO']),
+      isVerifiedProvider: true,
+      logo: merchantData.logo || (isService ? 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=160&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=160&auto=format&fit=crop&q=80'),
+      rating: 5.0,
+      reviewsCount: 1,
+      isOpen: true,
+      openingHours: merchantData.openingHours || '08:00 às 18:00',
+      deliveryFee: merchantData.deliveryFee ?? 0,
+      deliveryTimeEstimate: isService ? 'Sob Agendamento' : '30-45 min',
+      supportsPickup: merchantData.supportsPickup ?? true,
+      supportsTrial: merchantData.supportsTrial ?? false,
+      supportsAppointments: merchantData.supportsAppointments ?? true,
+      membershipTier: selectedTier,
+      maxProductsLimit: maxProducts,
+      commissionRate: commission,
+      status: 'approved', // Instant activation for excellent testing experience
+      submittedAt: new Date().toISOString().split('T')[0]
+    };
+
+    setMerchants((prev) => [newMerchant, ...prev]);
+
+    const newOwnerUser: User = {
+      id: `user-seller-${Date.now()}`,
+      name: ownerData.name || 'Proprietário',
+      email: ownerData.email || newMerchant.email,
+      phone: newMerchant.phone,
+      cpf: newMerchant.cnpjOrCpf,
+      idDocument: newMerchant.idDocument,
+      references: newMerchant.references,
+      role: 'VENDEDOR',
+      membershipTier: selectedTier,
+      merchantId: newStoreId,
+      city: newMerchant.city,
+      address: newMerchant.address,
+      neighborhood: newMerchant.neighborhood,
+      isEmailVerified: true,
+      twoFactorEnabled: false,
+      createdAt: new Date().toISOString()
+    };
+
+    setUsers((prev) => [...prev, newOwnerUser]);
+    setCurrentUser(newOwnerUser);
+    setCurrentEnvironment('SELLER_PORTAL');
+    addAuditLog('MERCHANT_REGISTER', `Novo parceiro credenciado: ${newMerchant.name} (Modalidade: ${selectedTier}, Limite: ${maxProducts} prods, Taxa: ${commission}%)`);
+    NotificationService.notifySecurityEvent(newOwnerUser, 'WELCOME');
+    triggerToast(`Cadastro realizado com sucesso! Painel ativado no plano ${selectedTier}.`);
+    return newMerchant;
+  };
+
+  const upgradeMerchantPlan = (merchantId: string, newTier: MembershipTier) => {
+    const maxProducts = getMaxProductsForTier(newTier);
+    const commission = getCommissionRateForTier(newTier);
+
+    setMerchants((prev) =>
+      prev.map((m) => {
+        if (m.id === merchantId) {
+          return {
+            ...m,
+            membershipTier: newTier,
+            maxProductsLimit: maxProducts,
+            commissionRate: commission
+          };
+        }
+        return m;
+      })
+    );
+
+    // Update currentUser if applicable
+    if (currentUser?.merchantId === merchantId || currentUser?.role === 'VENDEDOR') {
+      setCurrentUser((prev) => (prev ? { ...prev, membershipTier: newTier } : null));
+    }
+
+    addAuditLog('MEMBERSHIP_UPGRADE', `Loja ID ${merchantId} atualizou o plano para "${newTier}" (${maxProducts > 1000 ? 'Produtos Ilimitados' : `${maxProducts} prods`}, Taxa: ${commission}%)`);
+    triggerToast(`Parabéns! Seu estabelecimento foi atualizado para o ${newTier}!`);
+  };
+
+  const payOrderCommissionByMerchant = (orderId: string) => {
+    let updatedOrderRef: Order | undefined;
+
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord.id === orderId) {
+          const updated = {
+            ...ord,
+            commissionPaidToPlatform: true,
+            updatedAt: 'Agora'
+          };
+          updatedOrderRef = updated;
+          return updated;
+        }
+        return ord;
+      })
+    );
+
+    logFinancialEvent(
+      orderId,
+      'COMMISSION_PAID_BY_MERCHANT',
+      updatedOrderRef?.commissionAmount || 0,
+      `Lojista informou pagamento da taxa do pedido #${updatedOrderRef?.orderNumber || updatedOrderRef?.code || orderId}. Aguardando validação do Administrador Master.`,
+      {
+        orderId,
+        storeId: updatedOrderRef?.merchantId,
+        commissionAmount: updatedOrderRef?.commissionAmount
+      }
+    );
+    triggerToast('Comprovante/Pagamento de comissão enviado! O Administrador Master irá validar e liberar os dados do comprador.');
+
+    if (updatedOrderRef) {
+      dispatchCommissionSystemMessage(updatedOrderRef, 'MERCHANT_PAID');
+    }
+  };
+
+  const confirmOrderCommissionByMaster = (orderId: string) => {
+    let updatedOrderRef: Order | undefined;
+
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord.id === orderId) {
+          const updated = {
+            ...ord,
+            commissionPaidToPlatform: true,
+            commissionConfirmedByMaster: true,
+            buyerDataUnlocked: true,
+            updatedAt: 'Agora'
+          };
+          updatedOrderRef = updated;
+          return updated;
+        }
+        return ord;
+      })
+    );
+
+    logFinancialEvent(
+      orderId,
+      'COMMISSION_CONFIRMED_BY_MASTER',
+      updatedOrderRef?.commissionAmount || 0,
+      `Administrador Master confirmou o recebimento da taxa do pedido #${updatedOrderRef?.orderNumber || updatedOrderRef?.code || orderId}. Homologação e quitação concluídas.`,
+      {
+        orderId,
+        storeId: updatedOrderRef?.merchantId,
+        commissionAmount: updatedOrderRef?.commissionAmount
+      }
+    );
+
+    if (updatedOrderRef) {
+      logDataReleaseEvent(
+        orderId,
+        updatedOrderRef.merchantId,
+        updatedOrderRef.customerName,
+        'Homologação e liquidação da taxa de intermediação da plataforma pelo Administrador Master'
+      );
+    }
+
+    triggerToast('Comissão confirmada pelo Master! Dados do comprador liberados para a loja.');
+
+    if (updatedOrderRef) {
+      dispatchCommissionSystemMessage(updatedOrderRef, 'MASTER_CONFIRMED');
+    }
+  };
+
+  const toggleOrderBuyerDataByMaster = (orderId: string, unlocked: boolean) => {
+    let targetOrder: Order | undefined;
+
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord.id === orderId) {
+          const updated = { ...ord, buyerDataUnlocked: unlocked, updatedAt: 'Agora' };
+          targetOrder = updated;
+          return updated;
+        }
+        return ord;
+      })
+    );
+
+    if (unlocked && targetOrder) {
+      logDataReleaseEvent(
+        orderId,
+        targetOrder.merchantId,
+        targetOrder.customerName,
+        'Autorização discricionária direta emitida pelo Administrador Master Supremo'
+      );
+    } else {
+      addAuditLog(
+        'BUYER_DATA_REVOCATION_MASTER',
+        `[LGPD / SEGURANÇA] Administrador Master BLOQUEOU a visualização de dados do comprador para o pedido #${targetOrder?.orderNumber || targetOrder?.code || orderId}`,
+        {
+          category: 'DATA_PRIVACY',
+          severity: 'WARNING',
+          entityId: orderId,
+          entityType: 'BUYER_DATA',
+          metadata: {
+            orderId,
+            merchantId: targetOrder?.merchantId,
+            revokedBy: currentUser?.email
+          }
+        }
+      );
+    }
+
+    triggerToast(`Visualização de dados do comprador ${unlocked ? 'liberada' : 'bloqueada'} com sucesso.`);
+  };
+
+  const updateUserPassword = (newPassword: string): boolean => {
+    if (!currentUser) return false;
+    
+    const updatedUser: User = {
+      ...currentUser,
+      needsPasswordChange: false
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog('PASSWORD_UPDATE', 'Senha de acesso alterada com sucesso.');
+    triggerToast('Senha atualizada com sucesso! Sua conta está 100% segura.');
+    return true;
+  };
+
+  const toggleTwoFactor = (): boolean => {
+    if (!currentUser) return false;
+    const newState = !currentUser.twoFactorEnabled;
+    const updatedUser: User = {
+      ...currentUser,
+      twoFactorEnabled: newState
+    };
+    setCurrentUser(updatedUser);
+    addAuditLog('2FA_TOGGLE', `Autenticação em 2 etapas ${newState ? 'ativada' : 'desativada'}.`);
+    triggerToast(`Autenticação de 2 Fatores (2FA) ${newState ? 'ATIVADA' : 'DESATIVADA'}.`);
+    return newState;
+  };
+
+  const resendEmailConfirmation = (email: string): { success: boolean; message: string } => {
+    addAuditLog('EMAIL_VERIFY_REQUEST', `Link de confirmação reenviado para ${email}`);
+    triggerToast(`Link de verificação reenviado para ${email}. Verifique sua caixa de entrada.`);
+    return {
+      success: true,
+      message: `E-mail de confirmação enviado para ${email} com sucesso!`
+    };
+  };
+
+  const requestPasswordReset = (email: string): { success: boolean; message: string; simulatedCode?: string } => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    addAuditLog('PASSWORD_RESET_REQUEST', `Solicitação de recuperação de senha com código para ${email}`);
+    NotificationService.notifySecurityEvent({ email }, 'PASSWORD_RESET', { code });
+    return {
+      success: true,
+      message: `Código de segurança de 6 dígitos gerado e enviado para ${email}.`,
+      simulatedCode: code
+    };
+  };
+
+  const completePasswordReset = (email: string, code: string, newPassword: string): { success: boolean; message: string } => {
+    if (!code || code.length < 6) {
+      return { success: false, message: 'Código de verificação inválido.' };
+    }
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, message: 'A nova senha deve possuir no mínimo 6 caracteres.' };
+    }
+    addAuditLog('PASSWORD_RESET_COMPLETE', `Senha redefinida com sucesso para o usuário ${email}`);
+    triggerToast('Senha redefinida com sucesso! Você já pode entrar com sua nova senha.');
+    return { success: true, message: 'Senha alterada com sucesso!' };
+  };
+
+  const logout = () => {
+    if (currentUser) {
+      addAuditLog('USER_LOGOUT', `Usuário ${currentUser.name} encerrou a sessão`);
+    }
+    setCurrentUser(null);
+    setCurrentEnvironment('MARKETPLACE');
+    triggerToast('Você saiu da sua conta.');
+  };
+
+  // ==========================================
+  // CUSTOMER PROFILE & DATA SHEET MANAGEMENT
+  // ==========================================
+  const updateUserProfile = (updates: Partial<User>) => {
+    if (!currentUser) return;
+
+    const updatedUser: User = {
+      ...currentUser,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Se o usuário atualizou endereço primário na ficha básica
+    if (updates.neighborhood && !updates.city) {
+      updatedUser.city = currentCity;
+    }
+
+    setCurrentUser(updatedUser);
+    addAuditLog(
+      'CUSTOMER_PROFILE_UPDATE',
+      `Ficha cadastral de ${updatedUser.name} (${updatedUser.email}) modificada pelo próprio cliente.`
+    );
+    triggerToast('Ficha cadastral atualizada com sucesso!');
+  };
+
+  const addCustomerAddress = (addressData: Omit<CustomerAddress, 'id'>): CustomerAddress => {
+    if (!currentUser) {
+      throw new Error('Nenhum usuário autenticado para adicionar endereço.');
+    }
+
+    const currentAddresses = currentUser.addresses || [];
+    const isFirstAddress = currentAddresses.length === 0;
+    const shouldBeDefault = addressData.isDefault ?? isFirstAddress;
+
+    const newAddress: CustomerAddress = {
+      ...addressData,
+      id: `addr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      city: addressData.city || 'Cachoeiras de Macacu',
+      state: addressData.state || 'RJ',
+      isDefault: shouldBeDefault
+    };
+
+    const updatedAddresses = currentAddresses.map((addr) =>
+      shouldBeDefault ? { ...addr, isDefault: false } : addr
+    );
+    updatedAddresses.push(newAddress);
+
+    const primaryFormatted = `${newAddress.street}, ${newAddress.number}${
+      newAddress.complement ? ` (${newAddress.complement})` : ''
+    } - ${newAddress.neighborhood}`;
+
+    const updatedUser: User = {
+      ...currentUser,
+      addresses: updatedAddresses,
+      address: shouldBeDefault ? primaryFormatted : currentUser.address,
+      neighborhood: shouldBeDefault ? newAddress.neighborhood : currentUser.neighborhood,
+      updatedAt: new Date().toISOString()
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog(
+      'CUSTOMER_ADDRESS_ADD',
+      `Novo endereço "${newAddress.label}" (${newAddress.neighborhood}) adicionado à ficha do cliente.`
+    );
+    triggerToast(`Endereço "${newAddress.label}" adicionado com sucesso!`);
+    return newAddress;
+  };
+
+  const updateCustomerAddress = (id: string, updates: Partial<CustomerAddress>) => {
+    if (!currentUser || !currentUser.addresses) return;
+
+    const targetAddress = currentUser.addresses.find((a) => a.id === id);
+    if (!targetAddress) return;
+
+    const willBeDefault = updates.isDefault ?? targetAddress.isDefault;
+
+    const updatedAddresses = currentUser.addresses.map((addr) => {
+      if (addr.id === id) {
+        return {
+          ...addr,
+          ...updates,
+          isDefault: willBeDefault
+        };
+      }
+      if (willBeDefault) {
+        return { ...addr, isDefault: false };
+      }
+      return addr;
+    });
+
+    const defaultAddr = updatedAddresses.find((a) => a.isDefault) || updatedAddresses[0];
+    const primaryFormatted = defaultAddr
+      ? `${defaultAddr.street}, ${defaultAddr.number}${
+          defaultAddr.complement ? ` (${defaultAddr.complement})` : ''
+        } - ${defaultAddr.neighborhood}`
+      : currentUser.address;
+
+    const updatedUser: User = {
+      ...currentUser,
+      addresses: updatedAddresses,
+      address: primaryFormatted,
+      neighborhood: defaultAddr ? defaultAddr.neighborhood : currentUser.neighborhood,
+      updatedAt: new Date().toISOString()
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog('CUSTOMER_ADDRESS_UPDATE', `Endereço "${targetAddress.label}" modificado pelo cliente.`);
+    triggerToast('Endereço atualizado com sucesso!');
+  };
+
+  const deleteCustomerAddress = (id: string) => {
+    if (!currentUser || !currentUser.addresses) return;
+
+    const addressToDelete = currentUser.addresses.find((a) => a.id === id);
+    const filteredAddresses = currentUser.addresses.filter((a) => a.id !== id);
+
+    // Se o removido era o padrão, definir o primeiro restante como padrão
+    if (addressToDelete?.isDefault && filteredAddresses.length > 0) {
+      filteredAddresses[0].isDefault = true;
+    }
+
+    const defaultAddr = filteredAddresses.find((a) => a.isDefault) || filteredAddresses[0];
+    const primaryFormatted = defaultAddr
+      ? `${defaultAddr.street}, ${defaultAddr.number}${
+          defaultAddr.complement ? ` (${defaultAddr.complement})` : ''
+        } - ${defaultAddr.neighborhood}`
+      : undefined;
+
+    const updatedUser: User = {
+      ...currentUser,
+      addresses: filteredAddresses,
+      address: primaryFormatted,
+      neighborhood: defaultAddr ? defaultAddr.neighborhood : undefined,
+      updatedAt: new Date().toISOString()
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog(
+      'CUSTOMER_ADDRESS_DELETE',
+      `Endereço "${addressToDelete?.label || id}" removido da ficha cadastral.`
+    );
+    triggerToast('Endereço removido com sucesso.');
+  };
+
+  const setDefaultCustomerAddress = (id: string) => {
+    if (!currentUser || !currentUser.addresses) return;
+
+    const targetAddress = currentUser.addresses.find((a) => a.id === id);
+    if (!targetAddress) return;
+
+    const updatedAddresses = currentUser.addresses.map((addr) => ({
+      ...addr,
+      isDefault: addr.id === id
+    }));
+
+    const primaryFormatted = `${targetAddress.street}, ${targetAddress.number}${
+      targetAddress.complement ? ` (${targetAddress.complement})` : ''
+    } - ${targetAddress.neighborhood}`;
+
+    const updatedUser: User = {
+      ...currentUser,
+      addresses: updatedAddresses,
+      address: primaryFormatted,
+      neighborhood: targetAddress.neighborhood,
+      updatedAt: new Date().toISOString()
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog(
+      'CUSTOMER_ADDRESS_SET_DEFAULT',
+      `Endereço "${targetAddress.label}" definido como principal pelo cliente.`
+    );
+    triggerToast(`"${targetAddress.label}" agora é seu endereço de entrega principal.`);
+  };
+
+  const updateVipMeasurements = (measurements: VipMeasurements) => {
+    if (!currentUser) return;
+
+    const updatedUser: User = {
+      ...currentUser,
+      measurements,
+      updatedAt: new Date().toISOString()
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog('VIP_MEASUREMENTS_UPDATE', 'Ficha de medidas e preferências para Provador VIP atualizada.');
+    triggerToast('Ficha de medidas do Provador VIP salva com sucesso!');
+  };
+
+  const updateCustomerPreferences = (preferences: CustomerPreferences) => {
+    if (!currentUser) return;
+
+    const updatedUser: User = {
+      ...currentUser,
+      preferences,
+      updatedAt: new Date().toISOString()
+    };
+
+    setCurrentUser(updatedUser);
+    addAuditLog('CUSTOMER_PREFERENCES_UPDATE', 'Preferências de comunicação e canais atualizadas.');
+    triggerToast('Preferências de comunicação salvas com sucesso!');
+  };
+
+  // Products
+  const addProduct = (productData: Omit<Product, 'id' | 'createdAt'>): Product => {
+    const newProduct: Product = {
+      ...productData,
+      id: `prod-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+
+    setProducts((prev) => [newProduct, ...prev]);
+    addAuditLog('PRODUCT_CREATE', `Cadastrou o produto "${newProduct.name}" no catálogo`);
+    triggerToast(`Produto "${newProduct.name}" publicado com sucesso no marketplace!`);
+    return newProduct;
+  };
+
+  const updateProduct = (id: string, updates: Partial<Product>) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+    addAuditLog('PRODUCT_UPDATE', `Atualizou dados do produto ID ${id}`);
+    triggerToast('Produto atualizado com sucesso.');
+  };
+
+  const deleteProduct = (id: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    addAuditLog('PRODUCT_DELETE', `Removeu o produto ID ${id}`);
+    triggerToast('Produto removido.');
+  };
+
+  // Merchants
+  const approveMerchant = (id: string) => {
+    setMerchants((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'approved' } : m))
+    );
+    addAuditLog('MERCHANT_APPROVE', `Aprovou a loja ID ${id}`);
+    triggerToast('Lojista aprovado com sucesso!');
+  };
+
+  const rejectMerchant = (id: string) => {
+    setMerchants((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'rejected' } : m))
+    );
+    addAuditLog('MERCHANT_REJECT', `Rejeitou a loja ID ${id}`);
+    triggerToast('Cadastro rejeitado.');
+  };
+
+  const updateStoreProfile = (id: string, updates: Partial<StoreMerchant>) => {
+    setMerchants((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
+    );
+    addAuditLog('STORE_UPDATE', `Atualizou configurações da loja ID ${id}`);
+    triggerToast('Dados da loja atualizados.');
+  };
+
+  // Orders
+  const createOrder = (orderData: Omit<Order, 'id' | 'code' | 'createdAt' | 'updatedAt'>): Order => {
+    const randomNum = Math.floor(10000 + Math.random() * 90000); // Ex: 58291
+    const orderNumberStr = `#${randomNum}`;
+    
+    // Generate secure 6-char negotiation code (ex: K7P4X9)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let securityCode = '';
+    for (let i = 0; i < 6; i++) {
+      securityCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString(36).toUpperCase();
+    let prefix = 'DEL-';
+    if (orderData.modality === 'RETIRADA') prefix = 'RET-';
+    if (orderData.modality === 'EXPERIMENTAÇÃO') prefix = 'EXP-';
+    if (orderData.modality === 'AGENDAMENTO') prefix = 'AGE-';
+
+    const orderCode = `${prefix}${randomSuffix}`;
+
+    // Lookup merchant subscription level and calculate commission
+    const targetStore = merchants.find((m) => m.id === orderData.merchantId);
+    const storeTier = targetStore?.membershipTier || 'GRATIS';
+    const appliedCommissionRate = targetStore?.commissionRate ?? getCommissionRateForTier(storeTier);
+    const orderTotal = orderData.totalAmount || 0;
+    const computedCommission = Number(((orderTotal * appliedCommissionRate) / 100).toFixed(2));
+    
+    // For GRATIS tier: buyer data is strictly protected until commission is paid & confirmed by Master Admin
+    // For Bronze: unlocked after stock confirmation
+    // For Prata, Ouro, Premium: unlocked immediately
+    const isGratis = storeTier === 'GRATIS';
+    const isBronze = storeTier === 'BRONZE';
+    const initialBuyerDataUnlocked = !isGratis && !isBronze;
+
+    const newOrder: Order = {
+      ...orderData,
+      id: `order-${Date.now()}`,
+      code: orderCode,
+      orderNumber: orderData.orderNumber || orderNumberStr,
+      securityCode: orderData.securityCode || securityCode,
+      clientVerified: orderData.clientVerified ?? true,
+      stockConfirmationStatus: orderData.stockConfirmationStatus || 'PENDING_STORE_CONFIRMATION',
+      stockConfirmationExpiresAt: orderData.stockConfirmationExpiresAt || new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      reservationExpiresAt: orderData.reservationExpiresAt || new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+      pickupCode: orderData.modality === 'RETIRADA' ? orderCode : undefined,
+      commissionRateApplied: appliedCommissionRate,
+      commissionAmount: computedCommission,
+      commissionPaidToPlatform: false,
+      commissionConfirmedByMaster: false,
+      buyerDataUnlocked: initialBuyerDataUnlocked,
+      createdAt: 'Agora',
+      updatedAt: 'Agora'
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    
+    logOrderEvent(
+      newOrder.id,
+      'ORDER_PLACED',
+      `Solicitação de compra ${orderNumberStr} (${orderCode}) criada. Modalidade: ${orderData.modality}. Loja: ${targetStore?.name || 'Desconhecida'} (${storeTier}, Taxa: ${appliedCommissionRate}%, R$ ${computedCommission.toFixed(2)})`,
+      {
+        orderId: newOrder.id,
+        code: newOrder.code,
+        orderNumber: newOrder.orderNumber,
+        modality: newOrder.modality,
+        totalAmount: newOrder.totalAmount,
+        commissionAmount: computedCommission,
+        commissionRate: appliedCommissionRate,
+        storeTier,
+        merchantId: newOrder.merchantId,
+        buyerDataUnlocked: initialBuyerDataUnlocked
+      }
+    );
+
+    // Disparo de mensagem de sistema inicial no chat do subpedido
+    const initialSubId = (newOrder as any).subpedidos?.[0]?.id || `sub-${newOrder.id}`;
+    const initialSubCode = (newOrder as any).subpedidos?.[0]?.codigoSubpedido || `#${newOrder.orderNumber || newOrder.code}-A`;
+    sendSubOrderSystemMessage({
+      subpedidoId: initialSubId,
+      pedidoPrincipalId: newOrder.id,
+      codigoSubpedido: initialSubCode,
+      message: `📦 [HISTÓRICO OFICIAL] Pedido ${newOrder.orderNumber || newOrder.code} gerado (${newOrder.modality}). Código de segurança: ${newOrder.securityCode || newOrder.pickupCode || 'N/A'}. Aguardando confirmação do estabelecimento.`,
+      systemEventType: 'ORDER_CREATED',
+      statusBadge: newOrder.status || 'Pendente'
+    });
+
+    // Disparo de notificação transacional via NotificationService (com Supabase e WhatsApp)
+    NotificationService.notifyOrderEvent(newOrder, 'ORDER_PLACED');
+
+    if (orderData.modality === 'EXPERIMENTAÇÃO') {
+      NotificationService.notifyTrialEvent(newOrder, 'TRIAL_REQUESTED');
+    } else if (orderData.modality === 'AGENDAMENTO') {
+      NotificationService.notifyServiceBookingEvent(newOrder, 'SERVICE_BOOKED');
+    }
+
+    return newOrder;
+  };
+
+  const confirmOrderStock = (orderId: string) => {
+    let updatedOrderRef: Order | undefined;
+    const now = Date.now();
+    const reservationExpiresAt = new Date(now + 30 * 60 * 1000).toISOString(); // 30 min reservados
+
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord.id === orderId) {
+          const store = merchants.find((m) => m.id === ord.merchantId);
+          const storeTier = store?.membershipTier || 'GRATIS';
+          
+          // If Bronze tier, stock confirmation unlocks buyer data
+          // If Gratis, buyer data remains locked until commission confirmation
+          const shouldUnlockBuyerData = ord.buyerDataUnlocked || storeTier === 'BRONZE' || storeTier === 'PRATA' || storeTier === 'OURO' || storeTier === 'PREMIUM';
+
+          const updated: Order = {
+            ...ord,
+            status: 'Confirmado',
+            stockConfirmationStatus: 'STOCK_CONFIRMED',
+            reservationExpiresAt,
+            buyerDataUnlocked: shouldUnlockBuyerData,
+            updatedAt: 'Agora'
+          };
+          updatedOrderRef = updated;
+          return updated;
+        }
+        return ord;
+      })
+    );
+
+    logOrderEvent(
+      orderId,
+      'STOCK_CONFIRMED',
+      `Loja confirmou estoque do pedido #${updatedOrderRef?.orderNumber || updatedOrderRef?.code || orderId}. Produto reservado por 30 minutos (até ${new Date(reservationExpiresAt).toLocaleTimeString()}).`,
+      {
+        orderId,
+        reservationExpiresAt,
+        buyerDataUnlocked: updatedOrderRef?.buyerDataUnlocked,
+        merchantId: updatedOrderRef?.merchantId
+      }
+    );
+
+    if (updatedOrderRef?.buyerDataUnlocked) {
+      logDataReleaseEvent(
+        orderId,
+        updatedOrderRef.merchantId,
+        updatedOrderRef.customerName,
+        'Desbloqueio autorizado automaticamente após confirmação de estoque e verificação de plano do parceiro'
+      );
+    }
+
+    triggerToast(`Estoque confirmado com sucesso! Produto reservado por 30 minutos.`);
+
+    if (updatedOrderRef) {
+      dispatchOrderStatusSystemMessage(updatedOrderRef, 'Confirmado');
+      NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_CONFIRMED');
+    }
+  };
+
+  const rejectOrderStock = (orderId: string, reason: string = 'Produto indisponível no momento') => {
+    let updatedOrderRef: Order | undefined;
+
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord.id === orderId) {
+          const updated: Order = {
+            ...ord,
+            status: 'Sem Estoque',
+            stockConfirmationStatus: 'OUT_OF_STOCK',
+            cancellationReason: reason,
+            updatedAt: 'Agora'
+          };
+          updatedOrderRef = updated;
+          return updated;
+        }
+        return ord;
+      })
+    );
+
+    logOrderEvent(
+      orderId,
+      'STOCK_REJECTED',
+      `Loja informou sem estoque para o pedido #${updatedOrderRef?.orderNumber || updatedOrderRef?.code || orderId}. Motivo: ${reason}`,
+      {
+        orderId,
+        reason,
+        merchantId: updatedOrderRef?.merchantId
+      },
+      'WARNING'
+    );
+    triggerToast(`Pedido marcado como Sem Estoque.`);
+
+    if (updatedOrderRef) {
+      dispatchOrderStatusSystemMessage(updatedOrderRef, 'Sem Estoque', undefined, reason);
+      NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_CANCELLED');
+    }
+  };
+
+  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    let updatedOrderRef: Order | undefined;
+    let prevStatusRef: OrderStatus | undefined;
+
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord.id === orderId) {
+          prevStatusRef = ord.status;
+          const updated = { ...ord, status, updatedAt: 'Agora' };
+          updatedOrderRef = updated;
+          return updated;
+        }
+        return ord;
+      })
+    );
+
+    logOrderEvent(
+      orderId,
+      'ORDER_STATUS_UPDATE',
+      `Status do pedido #${updatedOrderRef?.orderNumber || updatedOrderRef?.code || orderId} alterado de "${prevStatusRef || 'Aguardando'}" para "${status}"`,
+      {
+        orderId,
+        previousStatus: prevStatusRef,
+        newStatus: status,
+        merchantId: updatedOrderRef?.merchantId
+      }
+    );
+    triggerToast(`Status do pedido atualizado para "${status}".`);
+
+    // Disparar mensagem de sistema automática no chat do subpedido
+    if (updatedOrderRef) {
+      dispatchOrderStatusSystemMessage(updatedOrderRef, status, prevStatusRef);
+
+      if (status === 'Confirmado') {
+        NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_CONFIRMED');
+      } else if (status === 'Em Preparo') {
+        NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_PREPARING');
+      } else if (status === 'Em Rota') {
+        NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_DISPATCHED');
+      } else if (status === 'Pronto para Retirada') {
+        NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_READY_PICKUP');
+      } else if (status === 'Concluído') {
+        NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_COMPLETED');
+      } else if (status === 'Cancelado' || status === 'Sem Estoque') {
+        NotificationService.notifyOrderEvent(updatedOrderRef, 'ORDER_CANCELLED');
+      }
+    }
+  };
+
+  const validatePickupCode = (code: string) => {
+    const cleanCode = code.trim().toUpperCase().replace('#', '');
+    const found = orders.find(
+      (o) =>
+        o.pickupCode?.toUpperCase() === cleanCode ||
+        o.code.toUpperCase() === cleanCode ||
+        o.securityCode?.toUpperCase() === cleanCode ||
+        o.orderNumber?.toUpperCase().replace('#', '') === cleanCode
+    );
+
+    if (!found) {
+      logSecurityEvent(
+        'PICKUP_VALIDATION_FAILED',
+        `Tentativa de validação com código inválido ou não encontrado: "${cleanCode}"`,
+        { attemptedCode: cleanCode },
+        'WARNING'
+      );
+      return { success: false, message: 'Código de segurança ou retirada não encontrado ou inválido.' };
+    }
+
+    if (found.status === 'Concluído') {
+      return { success: false, message: 'Este código já foi validado e o pedido concluído anteriormente.', order: found };
+    }
+
+    // Update order to Concluído
+    updateOrderStatus(found.id, 'Concluído');
+    logOrderEvent(
+      found.id,
+      'PICKUP_VALIDATED',
+      `Código de segurança/retirada ${cleanCode} validado com sucesso no balcão. Pedido entregue a ${found.customerName}.`,
+      {
+        orderId: found.id,
+        validatedCode: cleanCode,
+        customerName: found.customerName,
+        totalAmount: found.totalAmount
+      }
+    );
+    return {
+      success: true,
+      message: `Código ${cleanCode} validado com sucesso! Pedido ${found.orderNumber || found.code} entregue ao cliente ${found.customerName}.`,
+      order: { ...found, status: 'Concluído' }
+    };
+  };
+
+  // Cart & Favorites
+  const addToCart = (item: CartItem) => {
+    setCart((prev) => [...prev, item]);
+    triggerToast(`${item.product.name} adicionado à sua sacola!`);
+  };
+
+  const removeFromCart = (indexOrProductId: number | string) => {
+    setCart((prev) => {
+      if (typeof indexOrProductId === 'number') {
+        return prev.filter((_, i) => i !== indexOrProductId);
+      }
+      return prev.filter((item) => item.product.id !== indexOrProductId);
+    });
+    triggerToast('Item removido da sua sacola imediatamente!');
+  };
+
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const toggleFavorite = (productId: string) => {
+    setFavorites((prev) => {
+      if (prev.includes(productId)) {
+        triggerToast('Removido dos favoritos.');
+        return prev.filter((id) => id !== productId);
+      } else {
+        triggerToast('Adicionado aos seus favoritos!');
+        return [...prev, productId];
+      }
+    });
+  };
+
+  const isFavorite = (productId: string) => {
+    return favorites.includes(productId);
+  };
+
+  // ==========================================
+  // MASTER SUPREMO: COMPREHENSIVE CONTROL OPS
+  // ==========================================
+
+  // Users Management
+  const createUserByMaster = (userData: Omit<User, 'id' | 'createdAt'>): User => {
+    const newUser: User = {
+      ...userData,
+      id: `user-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+
+    setUsers((prev) => [newUser, ...prev]);
+    addAuditLog('MASTER_USER_CREATE', `Administrador Master criou o usuário "${newUser.name}" (${newUser.role} - ${newUser.email})`);
+    triggerToast(`Usuário "${newUser.name}" criado com sucesso!`);
+    return newUser;
+  };
+
+  const updateUserByMaster = (userId: string, updates: Partial<User>) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = { ...u, ...updates, updatedAt: new Date().toISOString() };
+          if (currentUser?.id === userId) {
+            setCurrentUser(updated);
+          }
+          return updated;
+        }
+        return u;
+      })
+    );
+
+    addAuditLog('MASTER_USER_UPDATE', `Administrador Master editou os dados do usuário ID ${userId}`);
+    triggerToast('Cadastro de usuário atualizado com sucesso.');
+  };
+
+  const blockUserByMaster = (userId: string, reason?: string) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = {
+            ...u,
+            status: 'blocked' as const,
+            statusReason: reason || 'Bloqueado por decisão administrativa Master'
+          };
+          if (currentUser?.id === userId) setCurrentUser(updated);
+          return updated;
+        }
+        return u;
+      })
+    );
+    addAuditLog('MASTER_USER_BLOCK', `Usuário ID ${userId} BLOQUEADO pelo Master. Motivo: ${reason || 'Sem motivo informado'}`);
+    triggerToast('Usuário bloqueado com sucesso.');
+  };
+
+  const suspendUserByMaster = (userId: string, reason?: string) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = {
+            ...u,
+            status: 'suspended' as const,
+            statusReason: reason || 'Suspenso preventivamente para verificação'
+          };
+          if (currentUser?.id === userId) setCurrentUser(updated);
+          return updated;
+        }
+        return u;
+      })
+    );
+    addAuditLog('MASTER_USER_SUSPEND', `Usuário ID ${userId} SUSPENSO pelo Master. Motivo: ${reason || 'Prevenção'}`);
+    triggerToast('Usuário suspenso temporariamente.');
+  };
+
+  const reactivateUserByMaster = (userId: string) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = {
+            ...u,
+            status: 'active' as const,
+            statusReason: undefined
+          };
+          if (currentUser?.id === userId) setCurrentUser(updated);
+          return updated;
+        }
+        return u;
+      })
+    );
+    addAuditLog('MASTER_USER_REACTIVATE', `Usuário ID ${userId} REATIVADO com status Ativo pelo Master`);
+    triggerToast('Usuário reativado com sucesso!');
+  };
+
+  const deleteUserByMaster = (userId: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    addAuditLog('MASTER_USER_DELETE', `Usuário ID ${userId} EXCLUÍDO definitivamente do sistema pelo Master`);
+    triggerToast('Usuário removido da base de dados.');
+  };
+
+  const resetUserPasswordByMaster = (userId: string): string => {
+    const tempPass = `Macacu#${Math.floor(1000 + Math.random() * 9000)}`;
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          return { ...u, needsPasswordChange: true };
+        }
+        return u;
+      })
+    );
+    addAuditLog('MASTER_PASSWORD_RESET', `Senha do usuário ID ${userId} resetada pelo Master. Nova provisória gerada.`);
+    triggerToast(`Senha resetada! Nova senha provisória: ${tempPass}`);
+    return tempPass;
+  };
+
+  const toggleUserVerificationByMaster = (userId: string) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const nextState = !u.isEmailVerified;
+          return { ...u, isEmailVerified: nextState };
+        }
+        return u;
+      })
+    );
+    addAuditLog('MASTER_USER_VERIFY_TOGGLE', `Status de verificação alterado para o usuário ID ${userId}`);
+    triggerToast('Status de verificação do usuário atualizado.');
+  };
+
+  const impersonateUser = (user: User) => {
+    setCurrentUser(user);
+    addAuditLog('MASTER_IMPERSONATE', `Master assumiu a sessão do usuário "${user.name}" (${user.role})`);
+    if (user.role === 'CLIENTE') {
+      setCurrentEnvironment('MARKETPLACE');
+    } else if (user.role === 'VENDEDOR') {
+      setCurrentEnvironment('SELLER_PORTAL');
+    } else if (user.role === 'MASTER') {
+      setCurrentEnvironment('MASTER_PANEL');
+    }
+    triggerToast(`Navegando como: ${user.name} (${user.role})`);
+  };
+
+  // Merchant Management Master
+  const createMerchantByMaster = (merchantData: Omit<StoreMerchant, 'id' | 'submittedAt'>): StoreMerchant => {
+    const newMerchant: StoreMerchant = {
+      ...merchantData,
+      id: `store-${Date.now()}`,
+      rating: merchantData.rating || 5.0,
+      reviewsCount: merchantData.reviewsCount || 0,
+      status: 'approved',
+      submittedAt: new Date().toISOString().split('T')[0]
+    };
+    setMerchants((prev) => [newMerchant, ...prev]);
+    addAuditLog('MASTER_MERCHANT_CREATE', `Master cadastrou a loja/prestador "${newMerchant.name}"`);
+    triggerToast(`Estabelecimento "${newMerchant.name}" cadastrado e ativado!`);
+    return newMerchant;
+  };
+
+  const suspendMerchant = (id: string, reason?: string) => {
+    setMerchants((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'suspended', statusReason: reason || 'Suspenso pela moderação' } : m))
+    );
+    addAuditLog('MASTER_MERCHANT_SUSPEND', `Loja ID ${id} SUSPENSA pelo Master. Motivo: ${reason || 'Ajustes contratuais'}`);
+    triggerToast('Loja suspensa com sucesso.');
+  };
+
+  const reactivateMerchant = (id: string) => {
+    setMerchants((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'approved', statusReason: undefined } : m))
+    );
+    addAuditLog('MASTER_MERCHANT_REACTIVATE', `Loja ID ${id} REATIVADA pelo Master`);
+    triggerToast('Loja reativada no marketplace!');
+  };
+
+  const deleteMerchant = (id: string) => {
+    setMerchants((prev) => prev.filter((m) => m.id !== id));
+    addAuditLog('MASTER_MERCHANT_DELETE', `Loja ID ${id} EXCLUÍDA do sistema pelo Master`);
+    triggerToast('Loja excluída do catálogo.');
+  };
+
+  const setMerchantCommissionRate = (id: string, rate: number) => {
+    setMerchants((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, commissionRate: rate } : m))
+    );
+    addAuditLog('MASTER_COMMISSION_UPDATE', `Taxa de comissão da loja ID ${id} ajustada para ${rate}%`);
+    triggerToast(`Comissão ajustada para ${rate}%.`);
+  };
+
+  // Products & Services Control Master
+  const toggleProductStatus = (id: string, status: 'active' | 'paused' | 'draft' | 'archived') => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status } : p))
+    );
+    addAuditLog('MASTER_PRODUCT_STATUS', `Status do produto ID ${id} alterado para "${status}"`);
+    triggerToast(`Status do produto alterado para ${status}.`);
+  };
+
+  const toggleProductFeatured = (id: string) => {
+    let nextState = false;
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          nextState = !p.featured;
+          return { ...p, featured: nextState };
+        }
+        return p;
+      })
+    );
+    addAuditLog('MASTER_PRODUCT_FEATURED', `Destaque do produto ID ${id} alterado para ${nextState ? 'SIM' : 'NÃO'}`);
+    triggerToast(nextState ? 'Produto destacado na Home!' : 'Destaque removido.');
+  };
+
+  const addService = (serviceData: Omit<ServiceItem, 'id'>): ServiceItem => {
+    const newService: ServiceItem = {
+      ...serviceData,
+      id: `srv-${Date.now()}`
+    };
+    setServices((prev) => [newService, ...prev]);
+    addAuditLog('SERVICE_CREATE', `Serviço "${newService.title}" cadastrado`);
+    triggerToast(`Serviço "${newService.title}" adicionado!`);
+    return newService;
+  };
+
+  const updateService = (id: string, updates: Partial<ServiceItem>) => {
+    setServices((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    );
+    addAuditLog('SERVICE_UPDATE', `Serviço ID ${id} atualizado`);
+    triggerToast('Serviço atualizado com sucesso.');
+  };
+
+  const deleteService = (id: string) => {
+    setServices((prev) => prev.filter((s) => s.id !== id));
+    addAuditLog('SERVICE_DELETE', `Serviço ID ${id} removido`);
+    triggerToast('Serviço removido.');
+  };
+
+  // Orders Intervention Master
+  const updateOrderDetailsByMaster = (orderId: string, updates: Partial<Order>) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, ...updates, updatedAt: 'Agora' } : o))
+    );
+    addAuditLog('MASTER_ORDER_INTERVENTION', `Master editou detalhes do pedido ID ${orderId}`);
+    triggerToast('Pedido atualizado pelo Master.');
+  };
+
+  const cancelOrderByMaster = (orderId: string, reason: string) => {
+    let targetOrder: Order | undefined;
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId) {
+          const updated = {
+            ...o,
+            status: 'Cancelado' as OrderStatus,
+            cancellationReason: reason,
+            updatedAt: 'Agora'
+          };
+          targetOrder = updated;
+          return updated;
+        }
+        return o;
+      })
+    );
+    if (targetOrder) {
+      NotificationService.notifyOrderEvent(targetOrder, 'ORDER_CANCELLED');
+    }
+    addAuditLog('MASTER_ORDER_CANCEL', `Pedido ID ${orderId} CANCELADO pelo Master. Motivo: ${reason}`);
+    triggerToast('Pedido cancelado e partes notificadas.');
+  };
+
+  const forceCompleteOrderByMaster = (orderId: string) => {
+    let targetOrder: Order | undefined;
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId) {
+          const updated = {
+            ...o,
+            status: 'Concluído' as OrderStatus,
+            pickupValidatedAt: new Date().toISOString(),
+            updatedAt: 'Agora'
+          };
+          targetOrder = updated;
+          return updated;
+        }
+        return o;
+      })
+    );
+    if (targetOrder) {
+      NotificationService.notifyOrderEvent(targetOrder, 'ORDER_COMPLETED');
+    }
+    addAuditLog('MASTER_ORDER_FORCE_COMPLETE', `Pedido ID ${orderId} CONCLUÍDO manualmente com baixa forçada pelo Master`);
+    triggerToast('Pedido finalizado com sucesso.');
+  };
+
+  const deleteOrderByMaster = (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    addAuditLog('MASTER_ORDER_DELETE', `Registro do pedido ID ${orderId} EXCLUÍDO do sistema`);
+    triggerToast('Pedido excluído.');
+  };
+
+  // System Settings & Database Control
+  const updateSystemSettings = (updates: Partial<SystemSettings>) => {
+    setSystemSettings((prev) => ({ ...prev, ...updates }));
+    addAuditLog('SYSTEM_SETTINGS_UPDATE', 'Configurações e parâmetros globais da plataforma atualizados');
+    triggerToast('Parâmetros do sistema salvos com sucesso!');
+  };
+
+  const clearAuditLogs = () => {
+    const initialLog: AuditLog = {
+      id: `log-${Date.now()}`,
+      userId: currentUser?.id || 'master',
+      userEmail: currentUser?.email || 'admin@acheiaqui.com.br',
+      action: 'AUDIT_LOGS_PURGE',
+      details: 'Logs anteriores arquivados/limpos pelo Master Supremo',
+      ipAddress: '177.18.240.12',
+      device: 'Painel Master Supremo',
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+    setAuditLogs([initialLog]);
+    triggerToast('Histórico de logs reinicializado.');
+  };
+
+  const exportFullDatabaseSnapshot = (): string => {
+    const snapshot = {
+      version: '2.0-SUPREMO',
+      timestamp: new Date().toISOString(),
+      city: currentCity,
+      systemSettings,
+      users,
+      merchants,
+      products,
+      services,
+      orders,
+      auditLogs
+    };
+    return JSON.stringify(snapshot, null, 2);
+  };
+
+  const importFullDatabaseSnapshot = (jsonString: string): boolean => {
+    try {
+      const data = JSON.parse(jsonString);
+      if (!data.users || !data.merchants || !data.products) {
+        throw new Error('Arquivo de backup inválido ou incompatível.');
+      }
+      if (data.users) setUsers(data.users);
+      if (data.merchants) setMerchants(data.merchants);
+      if (data.products) setProducts(data.products);
+      if (data.services) setServices(data.services);
+      if (data.orders) setOrders(data.orders);
+      if (data.auditLogs) setAuditLogs(data.auditLogs);
+      if (data.systemSettings) setSystemSettings(data.systemSettings);
+      if (data.city) setCurrentCity(data.city);
+
+      addAuditLog('SYSTEM_SNAPSHOT_RESTORE', 'Snapshot completo do banco de dados restaurado com sucesso');
+      triggerToast('Backup e banco de dados restaurados com 100% de integridade!');
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao importar';
+      triggerToast(`Falha na restauração: ${msg}`);
+      return false;
+    }
+  };
+
+  const resetDatabaseToDefaults = () => {
+    setUsers(INITIAL_USERS);
+    setMerchants(INITIAL_MERCHANTS);
+    setProducts(INITIAL_PRODUCTS);
+    setServices(INITIAL_SERVICES);
+    setOrders(INITIAL_ORDERS);
+    setAuditLogs(INITIAL_AUDIT_LOGS);
+    setSystemSettings(INITIAL_SYSTEM_SETTINGS);
+    setInterCategoryBanners(INITIAL_INTER_CATEGORY_BANNERS);
+    setAdSpaces(INITIAL_AD_SPACES);
+    setFrontendConfig(INITIAL_FRONTEND_CONFIG);
+    setCurrentCity('Cachoeiras de Macacu, RJ');
+    addAuditLog('SYSTEM_RESET_DEFAULT', 'Base de dados restaurada para o padrão inicial de fábrica');
+    triggerToast('Sistema restaurado para os dados originais padrão!');
+  };
+
+  // Inter-Category Banners Operations
+  const addInterCategoryBanner = (bannerData: Omit<InterCategoryBanner, 'id' | 'createdAt'>): InterCategoryBanner => {
+    const newBanner: InterCategoryBanner = {
+      ...bannerData,
+      id: `banner-inter-${Date.now()}`,
+      createdAt: new Date().toISOString().substring(0, 10)
+    };
+    setInterCategoryBanners((prev) => [newBanner, ...prev]);
+    addAuditLog('BANNER_INTER_CREATE', `Novo banner inter-categoria criado: "${newBanner.title}"`);
+    triggerToast('Banner inter-categoria cadastrado com sucesso!');
+    return newBanner;
+  };
+
+  const updateInterCategoryBanner = (id: string, updates: Partial<InterCategoryBanner>) => {
+    setInterCategoryBanners((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
+    );
+    addAuditLog('BANNER_INTER_UPDATE', `Banner inter-categoria #${id} atualizado`);
+    triggerToast('Banner inter-categoria atualizado!');
+  };
+
+  const deleteInterCategoryBanner = (id: string) => {
+    setInterCategoryBanners((prev) => prev.filter((b) => b.id !== id));
+    addAuditLog('BANNER_INTER_DELETE', `Banner inter-categoria #${id} removido`);
+    triggerToast('Banner removido!');
+  };
+
+  const toggleInterCategoryBannerStatus = (id: string) => {
+    setInterCategoryBanners((prev) =>
+      prev.map((b) =>
+        b.id === id
+          ? { ...b, status: b.status === 'active' ? 'paused' : 'active' }
+          : b
+      )
+    );
+    triggerToast('Status do banner atualizado!');
+  };
+
+  // Ad Spaces & Auctions Operations
+  const addAdSpace = (adSpaceData: Omit<AdSpace, 'id' | 'impressionsCount' | 'clicksCount' | 'revenueTotal'>): AdSpace => {
+    const newSpace: AdSpace = {
+      ...adSpaceData,
+      id: `ad-space-${Date.now()}`,
+      impressionsCount: 0,
+      clicksCount: 0,
+      revenueTotal: 0,
+      bids: []
+    };
+    setAdSpaces((prev) => [newSpace, ...prev]);
+    addAuditLog('AD_SPACE_CREATE', `Espaço publicitário criado: "${newSpace.name}"`);
+    triggerToast('Espaço de publicidade disponibilizado!');
+    return newSpace;
+  };
+
+  const updateAdSpace = (id: string, updates: Partial<AdSpace>) => {
+    setAdSpaces((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    );
+    addAuditLog('AD_SPACE_UPDATE', `Espaço publicitário #${id} atualizado`);
+    triggerToast('Espaço publicitário atualizado!');
+  };
+
+  const deleteAdSpace = (id: string) => {
+    setAdSpaces((prev) => prev.filter((s) => s.id !== id));
+    addAuditLog('AD_SPACE_DELETE', `Espaço publicitário #${id} excluído`);
+    triggerToast('Espaço publicitário excluído!');
+  };
+
+  const placeAdBid = (
+    adSpaceId: string,
+    merchantId: string,
+    merchantName: string,
+    bidAmount: number,
+    notes?: string
+  ): { success: boolean; message: string } => {
+    const space = adSpaces.find((s) => s.id === adSpaceId);
+    if (!space) return { success: false, message: 'Espaço não encontrado.' };
+
+    const minAmount = space.currentHighestBid ? space.currentHighestBid + 10 : (space.minimumBid || 50);
+    if (bidAmount < minAmount) {
+      return {
+        success: false,
+        message: `O lance mínimo para superar a oferta atual é de R$ ${minAmount.toFixed(2)}`
+      };
+    }
+
+    const newBid: AuctionBid = {
+      id: `bid-${Date.now()}`,
+      merchantId,
+      merchantName,
+      bidAmount,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status: 'HIGHEST',
+      notes
+    };
+
+    setAdSpaces((prev) =>
+      prev.map((s) => {
+        if (s.id === adSpaceId) {
+          const updatedBids = (s.bids || []).map((b) => ({
+            ...b,
+            status: b.status === 'HIGHEST' ? ('OUTBID' as const) : b.status
+          }));
+          return {
+            ...s,
+            status: 'IN_AUCTION' as const,
+            currentHighestBid: bidAmount,
+            currentWinnerMerchantId: merchantId,
+            currentWinnerMerchantName: merchantName,
+            bids: [newBid, ...updatedBids]
+          };
+        }
+        return s;
+      })
+    );
+
+    addAuditLog('AD_AUCTION_BID', `Novo lance de R$ ${bidAmount.toFixed(2)} por ${merchantName} no espaço #${space.name}`);
+    triggerToast(`🎉 Lance de R$ ${bidAmount.toFixed(2)} registrado com sucesso!`);
+    return { success: true, message: 'Lance registrado com sucesso!' };
+  };
+
+  const acceptAuctionWinner = (adSpaceId: string, bidId: string) => {
+    setAdSpaces((prev) =>
+      prev.map((s) => {
+        if (s.id === adSpaceId) {
+          const winningBid = s.bids?.find((b) => b.id === bidId);
+          if (!winningBid) return s;
+          const updatedBids = (s.bids || []).map((b) =>
+            b.id === bidId
+              ? { ...b, status: 'ACCEPTED' as const }
+              : { ...b, status: 'REJECTED' as const }
+          );
+          return {
+            ...s,
+            status: 'SOLD' as const,
+            activeMerchantId: winningBid.merchantId,
+            activeMerchantName: winningBid.merchantName,
+            revenueTotal: (s.revenueTotal || 0) + winningBid.bidAmount,
+            bids: updatedBids
+          };
+        }
+        return s;
+      })
+    );
+    addAuditLog('AD_AUCTION_WINNER_ACCEPTED', `Leilão arrematado para o espaço #${adSpaceId}`);
+    triggerToast('Vencedor do leilão confirmado e espaço ativado!');
+  };
+
+  const sellAdSpaceDirectly = (
+    adSpaceId: string,
+    merchantId: string,
+    merchantName: string,
+    price: number,
+    period: 'week' | 'month'
+  ) => {
+    setAdSpaces((prev) =>
+      prev.map((s) => {
+        if (s.id === adSpaceId) {
+          return {
+            ...s,
+            status: 'SOLD' as const,
+            commercialType: 'DIRECT_SALE' as const,
+            activeMerchantId: merchantId,
+            activeMerchantName: merchantName,
+            revenueTotal: (s.revenueTotal || 0) + price
+          };
+        }
+        return s;
+      })
+    );
+    addAuditLog('AD_DIRECT_SALE', `Espaço #${adSpaceId} vendido diretamente para ${merchantName} (${period}) por R$ ${price.toFixed(2)}`);
+    triggerToast(`Espaço publicitário vendido para ${merchantName}!`);
+  };
+
+  const trackAdImpression = useCallback((adSpaceId: string) => {
+    setAdSpaces((prev) =>
+      prev.map((s) =>
+        s.id === adSpaceId ? { ...s, impressionsCount: (s.impressionsCount || 0) + 1 } : s
+      )
+    );
+  }, []);
+
+  const trackAdClick = useCallback((adSpaceId: string) => {
+    setAdSpaces((prev) =>
+      prev.map((s) =>
+        s.id === adSpaceId ? { ...s, clicksCount: (s.clicksCount || 0) + 1 } : s
+      )
+    );
+  }, []);
+
+  // Master Frontend Customization Operations
+  const updateFrontendConfig = (updates: Partial<FrontendCustomization>) => {
+    setFrontendConfig((prev) => ({ ...prev, ...updates }));
+    addAuditLog('FRONTEND_CONFIG_UPDATE', 'Configurações de visual do frontend atualizadas pelo Master');
+    triggerToast('Visual e configurações do frontend atualizados com sucesso!');
+  };
+
+  const addNavMenuItem = (item: Omit<NavMenuItem, 'id'>) => {
+    const newItem: NavMenuItem = {
+      ...item,
+      id: `menu-${Date.now()}`
+    };
+    setFrontendConfig((prev) => ({
+      ...prev,
+      navMenuItems: [...prev.navMenuItems, newItem]
+    }));
+    triggerToast('Item adicionado ao menu de navegação!');
+  };
+
+  const updateNavMenuItem = (id: string, updates: Partial<NavMenuItem>) => {
+    setFrontendConfig((prev) => ({
+      ...prev,
+      navMenuItems: prev.navMenuItems.map((item) =>
+        item.id === id ? { ...item, ...updates } : item
+      )
+    }));
+    triggerToast('Item do menu atualizado!');
+  };
+
+  const deleteNavMenuItem = (id: string) => {
+    setFrontendConfig((prev) => ({
+      ...prev,
+      navMenuItems: prev.navMenuItems.filter((item) => item.id !== id)
+    }));
+    triggerToast('Item removido do menu!');
+  };
+
+  const reorderNavMenuItems = (items: NavMenuItem[]) => {
+    setFrontendConfig((prev) => ({
+      ...prev,
+      navMenuItems: items
+    }));
+    triggerToast('Ordem do menu salva!');
+  };
+
+  // ==========================================
+  // AVALIAÇÕES MÚTUAS & REPUTAÇÃO LOCAL
+  // ==========================================
+
+  const addCustomerReview = (
+    reviewData: Omit<CustomerToMerchantReview, 'id' | 'createdAt'>
+  ): CustomerToMerchantReview => {
+    const newReview: CustomerToMerchantReview = {
+      ...reviewData,
+      id: `rev-c-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setReviews((prev) => [newReview, ...prev]);
+
+    // Recalculate merchant overall rating
+    setMerchants((prev) =>
+      prev.map((m) => {
+        if (m.id === reviewData.merchantId) {
+          const storeReviews = [...reviews.filter((r) => r.merchantId === m.id), newReview];
+          const newAvg =
+            storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length;
+          return {
+            ...m,
+            rating: Number(newAvg.toFixed(1)),
+            reviewsCount: storeReviews.length
+          };
+        }
+        return m;
+      })
+    );
+
+    addAuditLog(
+      'CUSTOMER_REVIEW_SUBMITTED',
+      `Cliente ${reviewData.userName} avaliou o estabelecimento ${reviewData.merchantName} com nota ${reviewData.rating}.0`
+    );
+    triggerToast('Avaliação enviada com sucesso! Obrigado pela contribuição.');
+    return newReview;
+  };
+
+  const addMerchantReview = (
+    reviewData: Omit<MerchantToCustomerReview, 'id' | 'createdAt'>
+  ): MerchantToCustomerReview => {
+    const newReview: MerchantToCustomerReview = {
+      ...reviewData,
+      id: `rev-m-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setMerchantReviews((prev) => [newReview, ...prev]);
+
+    addAuditLog(
+      'MERCHANT_REVIEW_SUBMITTED',
+      `Lojista ${reviewData.merchantName} avaliou a conduta do cliente ${reviewData.userName} (Pedido #${reviewData.orderCode}) com nota ${reviewData.rating}.0`
+    );
+    triggerToast(`Avaliação de conduta de ${reviewData.userName} registrada com sucesso!`);
+    return newReview;
+  };
+
+  const replyToCustomerReview = (
+    reviewId: string,
+    replyText: string,
+    merchantAuthorName?: string
+  ) => {
+    setReviews((prev) =>
+      prev.map((r) => {
+        if (r.id === reviewId) {
+          return {
+            ...r,
+            merchantReply: {
+              replyText,
+              repliedAt: `${new Date().toISOString().split('T')[0]} às ${new Date()
+                .toTimeString()
+                .slice(0, 5)}`,
+              merchantAuthorName: merchantAuthorName || 'Estabelecimento'
+            }
+          };
+        }
+        return r;
+      })
+    );
+    addAuditLog('MERCHANT_REVIEW_REPLY', `Resposta pública adicionada para a avaliação #${reviewId}`);
+    triggerToast('Resposta pública publicada com sucesso!');
+  };
+
+  const getCustomerReputationSummary = useCallback(
+    (userId: string): CustomerReputationSummary => {
+      const userMerchantReviews = merchantReviews.filter(
+        (r) => r.userId === userId || (currentUser && currentUser.id === userId)
+      );
+
+      const targetUser = users.find((u) => u.id === userId) || currentUser;
+      const userName = targetUser?.name || 'Cliente Achei Aqui';
+
+      if (userMerchantReviews.length === 0) {
+        return {
+          userId,
+          userName,
+          averageScore: 5.0,
+          totalEvaluations: 0,
+          punctualityScore: 5.0,
+          communicationScore: 5.0,
+          paymentScore: 5.0,
+          careScore: 5.0,
+          recommendationPercentage: 100,
+          badges: ['Cliente Verificado', 'Novo na Cidade'],
+          reviews: []
+        };
+      }
+
+      const total = userMerchantReviews.length;
+      const avgScore =
+        userMerchantReviews.reduce((acc, curr) => acc + curr.rating, 0) / total;
+      const avgPunctuality =
+        userMerchantReviews.reduce(
+          (acc, curr) => acc + (curr.behaviorCriteria?.punctuality || curr.rating),
+          0
+        ) / total;
+      const avgCommunication =
+        userMerchantReviews.reduce(
+          (acc, curr) => acc + (curr.behaviorCriteria?.communication || curr.rating),
+          0
+        ) / total;
+      const avgPayment =
+        userMerchantReviews.reduce(
+          (acc, curr) => acc + (curr.behaviorCriteria?.paymentAndAgreements || curr.rating),
+          0
+        ) / total;
+      const avgCare =
+        userMerchantReviews.reduce(
+          (acc, curr) => acc + (curr.behaviorCriteria?.careAndRespect || curr.rating),
+          0
+        ) / total;
+
+      const recommendedCount = userMerchantReviews.filter(
+        (r) => r.recommendForOtherMerchants
+      ).length;
+      const recPercent = Math.round((recommendedCount / total) * 100);
+
+      const badges: string[] = ['Cliente Verificado'];
+      if (avgScore >= 4.8) badges.push('Cliente 5 Estrelas');
+      if (avgPunctuality >= 4.8) badges.push('Pontualidade Exemplar');
+      if (avgPayment >= 4.8) badges.push('Pagador Pontual');
+      if (avgCare >= 4.8) badges.push('VIP Provador Cuidadoso');
+
+      return {
+        userId,
+        userName,
+        averageScore: Number(avgScore.toFixed(1)),
+        totalEvaluations: total,
+        punctualityScore: Number(avgPunctuality.toFixed(1)),
+        communicationScore: Number(avgCommunication.toFixed(1)),
+        paymentScore: Number(avgPayment.toFixed(1)),
+        careScore: Number(avgCare.toFixed(1)),
+        recommendationPercentage: recPercent,
+        badges,
+        reviews: userMerchantReviews
+      };
+    },
+    [merchantReviews, users, currentUser]
+  );
+
+  const isOrderReviewedByCustomer = (orderId: string): boolean => {
+    return reviews.some((r) => r.orderId === orderId);
+  };
+
+  const isOrderReviewedByMerchant = (orderId: string): boolean => {
+    return merchantReviews.some((r) => r.orderId === orderId);
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        currentUser,
+        users,
+        systemSettings,
+        currentEnvironment,
+        currentCity,
+        merchants,
+        products,
+        services,
+        orders,
+        cart,
+        favorites,
+        auditLogs,
+        interCategoryBanners,
+        adSpaces,
+        frontendConfig,
+        setCurrentEnvironment,
+        setCurrentCity,
+        login,
+        verifyTwoFactorCode,
+        resendTwoFactorCode,
+        loginAsUser,
+        registerCustomer,
+        registerMerchant,
+        logout,
+        updateUserPassword,
+        toggleTwoFactor,
+        resendEmailConfirmation,
+        requestPasswordReset,
+        completePasswordReset,
+        addAuditLog,
+        logSecurityEvent,
+        logOrderEvent,
+        logDataReleaseEvent,
+        logMessageEvent,
+        logFinancialEvent,
+        getAuditLogsByEntity,
+        getAuditStats,
+        exportAuditLogs,
+        updateUserProfile,
+        addCustomerAddress,
+        updateCustomerAddress,
+        deleteCustomerAddress,
+        setDefaultCustomerAddress,
+        updateVipMeasurements,
+        updateCustomerPreferences,
+        createUserByMaster,
+        updateUserByMaster,
+        blockUserByMaster,
+        suspendUserByMaster,
+        reactivateUserByMaster,
+        deleteUserByMaster,
+        resetUserPasswordByMaster,
+        toggleUserVerificationByMaster,
+        impersonateUser,
+        approveMerchant,
+        rejectMerchant,
+        suspendMerchant,
+        reactivateMerchant,
+        deleteMerchant,
+        updateStoreProfile,
+        createMerchantByMaster,
+        setMerchantCommissionRate,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        toggleProductStatus,
+        toggleProductFeatured,
+        addService,
+        updateService,
+        deleteService,
+        createOrder,
+        confirmOrderStock,
+        rejectOrderStock,
+        updateOrderStatus,
+        updateOrderDetailsByMaster,
+        cancelOrderByMaster,
+        forceCompleteOrderByMaster,
+        deleteOrderByMaster,
+        validatePickupCode,
+        updateSystemSettings,
+        clearAuditLogs,
+        exportFullDatabaseSnapshot,
+        importFullDatabaseSnapshot,
+        resetDatabaseToDefaults,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        toggleFavorite,
+        isFavorite,
+        addInterCategoryBanner,
+        updateInterCategoryBanner,
+        deleteInterCategoryBanner,
+        toggleInterCategoryBannerStatus,
+        addAdSpace,
+        updateAdSpace,
+        deleteAdSpace,
+        placeAdBid,
+        acceptAuctionWinner,
+        sellAdSpaceDirectly,
+        trackAdImpression,
+        trackAdClick,
+        updateFrontendConfig,
+        addNavMenuItem,
+        updateNavMenuItem,
+        deleteNavMenuItem,
+        reorderNavMenuItems,
+        toastMessage,
+        triggerToast,
+        reviews,
+        merchantReviews,
+        isPolicyModalOpen,
+        policyModalTab,
+        openPolicyModal,
+        closePolicyModal,
+        isCopyrightModalOpen,
+        openCopyrightModal,
+        closeCopyrightModal,
+        isPrivacyModalOpen,
+        openPrivacyModal,
+        closePrivacyModal,
+        isTermsModalOpen,
+        openTermsModal,
+        closeTermsModal,
+        isPlansModalOpen,
+        openPlansModal,
+        closePlansModal,
+        isUserManualModalOpen,
+        userManualModalTab,
+        openUserManualModal,
+        closeUserManualModal,
+        upgradeMerchantPlan,
+        payOrderCommissionByMerchant,
+        confirmOrderCommissionByMaster,
+        toggleOrderBuyerDataByMaster,
+        addCustomerReview,
+        addMerchantReview,
+        replyToCustomerReview,
+        getCustomerReputationSummary,
+        isOrderReviewedByCustomer,
+        isOrderReviewedByMerchant,
+        notifications,
+        sendInAppNotification,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        deleteInAppNotification,
+        getUserNotifications,
+        getUnreadNotificationsCount,
+        isNotificationModalOpen,
+        selectedNotification,
+        openNotificationDetailModal,
+        closeNotificationDetailModal,
+        subOrderMessages,
+        activeChatSubOrder,
+        openSubOrderChat,
+        closeSubOrderChat,
+        sendSubOrderMessage,
+        sendSubOrderSystemMessage,
+        dispatchOrderStatusSystemMessage,
+        dispatchCommissionSystemMessage,
+        receiveSubOrderMessage,
+        markSubOrderMessagesAsRead,
+        getSubOrderMessages,
+        getUnreadSubOrderMessagesCount,
+        deleteSubOrderMessage
+      }}
+    >
+      {children}
+      <ReviewPolicyModal
+        isOpen={isPolicyModalOpen}
+        onClose={closePolicyModal}
+        defaultTab={policyModalTab}
+      />
+      <CopyrightModal
+        isOpen={isCopyrightModalOpen}
+        onClose={closeCopyrightModal}
+        onOpenUserManual={openUserManualModal}
+        onOpenPlansModal={openPlansModal}
+        onOpenPrivacyModal={openPrivacyModal}
+        onOpenTermsModal={openTermsModal}
+      />
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={closePrivacyModal}
+      />
+      <TermsOfUseModal
+        isOpen={isTermsModalOpen}
+        onClose={closeTermsModal}
+      />
+      <UserManualModal
+        isOpen={isUserManualModalOpen}
+        onClose={closeUserManualModal}
+        initialTab={userManualModalTab}
+        onOpenPlansModal={openPlansModal}
+        onOpenCopyrightModal={openCopyrightModal}
+        onOpenPrivacyModal={openPrivacyModal}
+        onOpenTermsModal={openTermsModal}
+      />
+      <MembershipPlansModal
+        isOpen={isPlansModalOpen}
+        onClose={closePlansModal}
+        currentTier={currentUser?.membershipTier || 'GRATIS'}
+        onSelectTier={(tier) => {
+          if (currentUser?.merchantId) {
+            upgradeMerchantPlan(currentUser.merchantId, tier);
+          } else if (currentUser) {
+            updateUserProfile({ membershipTier: tier });
+          }
+          closePlansModal();
+        }}
+      />
+      <NotificationDetailModal
+        isOpen={isNotificationModalOpen}
+        notification={selectedNotification}
+        onClose={closeNotificationDetailModal}
+        onNavigateTab={(tab) => {
+          if (tab === 'account') {
+            setCurrentEnvironment('MARKETPLACE');
+          } else if (tab === 'plans') {
+            openPlansModal();
+          } else if (tab === 'home') {
+            setCurrentEnvironment('MARKETPLACE');
+          }
+        }}
+      />
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};
