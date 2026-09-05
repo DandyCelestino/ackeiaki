@@ -1108,38 +1108,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return [];
       }
 
-      // Master possui visão administrativa geral
-      if (targetUser.role === 'MASTER') {
-        return notifications;
-      }
-
-      // VENDEDOR: Apenas notificações destinadas especificamente a ele ou à sua loja
-      if (targetUser.role === 'VENDEDOR') {
-        const userMerchantId = targetUser.merchantId;
-        return notifications.filter((n) => {
-          if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
-          if (userMerchantId && n.recipientMerchantId && n.recipientMerchantId === userMerchantId) return true;
-          return false;
-        });
-      }
-
-      // CLIENTE: Apenas notificações estritamente particulares com o seu nome e ID
+      // Toda notificação interna precisa apontar para o usuário ou loja destinatária.
+      // Não usar papel, nome, telefone ou e-mail como fallback: esses dados não são únicos
+      // o suficiente para autorizar a leitura de uma mensagem privada.
       return notifications.filter((n) => {
         if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
-        if (
-          n.recipientPhone &&
-          targetUser.phone &&
-          n.recipientPhone.replace(/\D/g, '') === targetUser.phone.replace(/\D/g, '')
-        ) {
-          return true;
-        }
-        if (
-          n.recipientEmail &&
-          targetUser.email &&
-          n.recipientEmail.trim().toLowerCase() === targetUser.email.trim().toLowerCase()
-        ) {
-          return true;
-        }
+        if (targetUser.merchantId && n.recipientMerchantId === targetUser.merchantId) return true;
         return false;
       });
     },
@@ -1380,13 +1354,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isSubOrderMessageVisibleToUser = useCallback(
     (message: SubOrderMessage, user?: User | null): boolean => {
       if (!user) return false;
-      if (user.role === 'MASTER' || message.senderId === user.id) return true;
+      if (message.senderId === user.id) return true;
 
       const recipientIds = [message.recipientId, ...(message.recipientIds || [])].filter(Boolean);
       if (recipientIds.includes(user.id)) return true;
       if (user.merchantId && recipientIds.includes(user.merchantId)) return true;
-
-      return message.recipientRole === user.role;
+      return false;
     },
     []
   );
