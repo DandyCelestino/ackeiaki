@@ -80,6 +80,7 @@ export const MasterAdminPanel: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLiveOpsActive, setIsLiveOpsActive] = useState(true);
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   // Dossier 360 Modal State
   const [dossierTarget, setDossierTarget] = useState<{ userId?: string; merchantId?: string } | null>(null);
@@ -393,9 +394,19 @@ export const MasterAdminPanel: React.FC = () => {
           {/* User profile banner at bottom */}
           <div className="p-3 mt-auto border-t border-slate-800/80 bg-slate-950/30 shrink-0">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs">
-                {currentUser?.name?.charAt(0) || 'M'}
-              </div>
+              {currentUser?.avatar && !avatarLoadFailed ? (
+                <img
+                  src={currentUser.avatar}
+                  alt={`Avatar de ${currentUser.name || 'usuário'}`}
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarLoadFailed(true)}
+                  className="w-9 h-9 rounded-full object-cover border border-blue-400/70 shrink-0"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs shrink-0">
+                  {currentUser?.name?.charAt(0) || 'M'}
+                </div>
+              )}
               <div className="flex flex-col min-w-0">
                 <span className="text-xs font-bold text-white truncate">
                   {currentUser?.name || 'Administrador Master'}
