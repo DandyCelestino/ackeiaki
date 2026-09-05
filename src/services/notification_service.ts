@@ -300,6 +300,10 @@ export async function logNotification(
       error_message: errorMessage
     };
 
+    if (!supabase) {
+      return { success: false, error: 'Supabase não configurado no ambiente.' };
+    }
+
     const { data: insertResult, error } = await supabase
       .from('notification_deliveries')
       .insert([payload])

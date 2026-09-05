@@ -124,22 +124,26 @@ export const MasterOrdersView: React.FC<MasterOrdersViewProps> = ({ onOpenDossie
     const total = Number(newOrderForm.subtotal) + Number(newOrderForm.deliveryFee);
 
     createOrder({
+      userId: '',
       merchantId: newOrderForm.merchantId,
       merchantName: selMerchant?.name || 'Loja Macacu',
       customerName: newOrderForm.customerName,
       customerPhone: newOrderForm.customerPhone,
+      type: 'PRODUTO',
       deliveryAddress: newOrderForm.deliveryAddress,
       modality: newOrderForm.modality,
       items: [
         {
           id: `item-${Date.now()}`,
           name: newOrderForm.itemsSummary,
+          productId: `product-${Date.now()}`,
+          productName: newOrderForm.itemsSummary,
+          productImage: '',
           price: Number(newOrderForm.subtotal),
           quantity: 1
         }
       ],
-      total,
-      subtotal: Number(newOrderForm.subtotal),
+      totalAmount: total,
       deliveryFee: Number(newOrderForm.deliveryFee),
       paymentMethod: newOrderForm.paymentMethod,
       status: 'Confirmado'

@@ -29,7 +29,8 @@ export const MasterSettingsView: React.FC = () => {
     exportFullDatabaseSnapshot,
     importFullDatabaseSnapshot,
     resetDatabaseToDefaults,
-    triggerToast
+    triggerToast,
+    syncAppDataToSupabase
   } = useApp();
 
   const [formData, setFormData] = useState<SystemSettings>({ ...systemSettings });
@@ -66,6 +67,17 @@ export const MasterSettingsView: React.FC = () => {
       setShowImportModal(false);
       setImportJsonText('');
     }
+  };
+
+  const handleSupabaseSync = async () => {
+    triggerToast('Sincronização com Supabase iniciada...');
+    const result = await syncAppDataToSupabase();
+    if (!result.ok) {
+      triggerToast(`Falha na sincronização: ${result.error || 'verifique o schema e as credenciais.'}`);
+      return;
+    }
+    const total = Object.values(result.synced).reduce((sum, count) => sum + count, 0);
+    triggerToast(`${total} registros sincronizados com o Supabase.`);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -361,6 +373,14 @@ export const MasterSettingsView: React.FC = () => {
             >
               <Upload className="w-4 h-4" />
               <span>Restaurar / Importar Snapshot</span>
+            </button>
+
+            <button
+              onClick={handleSupabaseSync}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center space-x-2 transition-colors shadow-xs"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Sincronizar dados com Supabase</span>
             </button>
           </div>
 

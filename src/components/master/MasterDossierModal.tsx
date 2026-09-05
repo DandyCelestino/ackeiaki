@@ -39,7 +39,7 @@ import { useApp } from '../../context/AppContext';
 import { User, StoreMerchant, Order, Product, ServiceItem, CustomerToMerchantReview, AuditLog } from '../../types';
 
 interface MasterDossierModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   targetUserId?: string;
   targetMerchantId?: string;
@@ -226,7 +226,7 @@ export const MasterDossierModal: React.FC<MasterDossierModalProps> = ({
             {targetUser && (
               <button
                 type="button"
-                onClick={() => impersonateUser(targetUser.id)}
+                onClick={() => impersonateUser(targetUser)}
                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5 cursor-pointer"
                 title="Acessar painel como este usuário"
               >

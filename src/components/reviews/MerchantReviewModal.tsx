@@ -21,6 +21,8 @@ interface MerchantReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order | null;
+  merchantName?: string;
+  merchantOwnerName?: string;
   onSubmitReview: (review: Omit<MerchantToCustomerReview, 'id' | 'createdAt'>) => void;
   onOpenPolicy: () => void;
 }

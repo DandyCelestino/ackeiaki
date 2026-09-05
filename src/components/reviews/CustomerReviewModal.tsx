@@ -14,12 +14,13 @@ import {
   Camera,
   Info
 } from 'lucide-react';
-import { Order, CustomerToMerchantReview, CustomerReviewCriteria } from '../../types';
+import { Order, User, CustomerToMerchantReview, CustomerReviewCriteria } from '../../types';
 
 interface CustomerReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order | null;
+  currentUser?: User;
   onSubmitReview: (review: Omit<CustomerToMerchantReview, 'id' | 'createdAt'>) => void;
   onOpenPolicy: () => void;
 }

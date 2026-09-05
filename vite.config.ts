@@ -10,9 +10,10 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+      dedupe: ['react', 'react-dom'],
     },
     server: {
-      port: 3000,
+      port: 300,
       host: '0.0.0.0',
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',

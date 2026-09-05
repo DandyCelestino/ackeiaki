@@ -38,9 +38,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
   const [email, setEmail] = useState(
     requiredRole === 'MASTER' ? 'telecom.david@gmail.com' : 'carlos@boutiquedasflores.com.br'
   );
-  const [password, setPassword] = useState(
-    requiredRole === 'MASTER' ? 'telecom2026!' : '123456'
-  );
+  const [password, setPassword] = useState('');
   const [is2FAStep, setIs2FAStep] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [simulatedCode, setSimulatedCode] = useState<string | null>(null);
@@ -186,7 +184,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
               <div className="p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs space-y-1.5">
                 <div className="flex items-center space-x-2 text-amber-400 font-bold">
                   <KeyRound className="w-4 h-4" />
-                  <span>Código de Verificação 2FA:</span>
+                  <span>Código 2FA deste painel:</span>
                 </div>
                 {simulatedCode && (
                   <div className="flex items-center justify-between pt-1">
@@ -243,7 +241,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
                   className="text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
-                  <span>Reenviar token</span>
+                      <span>Gerar novo código</span>
                 </button>
               </div>
             </form>

@@ -8,19 +8,21 @@ import {
   Pause,
   Play
 } from 'lucide-react';
-import { InterCategoryBanner } from '../../types';
+import { InterCategoryBanner, CarouselSlide } from '../../types';
 import { useApp } from '../../context/AppContext';
 
 interface FullWidthCarouselBannerProps {
   banner: InterCategoryBanner;
   onNavigateToCategory?: (category: string) => void;
   onOpenStore?: (merchantId: string) => void;
+  onSlideClick?: (slide: CarouselSlide) => void;
 }
 
 export const FullWidthCarouselBanner: React.FC<FullWidthCarouselBannerProps> = ({
   banner,
   onNavigateToCategory,
-  onOpenStore
+  onOpenStore,
+  onSlideClick
 }) => {
   const { trackAdImpression, trackAdClick } = useApp();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -68,6 +70,7 @@ export const FullWidthCarouselBanner: React.FC<FullWidthCarouselBannerProps> = (
   };
 
   const handleActionClick = () => {
+    onSlideClick?.(currentSlide);
     if (banner.adSpaceId) {
       trackAdClick(banner.adSpaceId);
     }

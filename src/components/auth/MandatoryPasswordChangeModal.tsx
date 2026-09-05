@@ -37,8 +37,8 @@ export const MandatoryPasswordChangeModal: React.FC = () => {
     setTimeout(() => {
       const result = updateUserPassword(newPassword);
       setIsSubmitting(false);
-      if (!result.success) {
-        setErrorMessage(result.message);
+      if (!result) {
+        setErrorMessage('Não foi possível atualizar a senha. Tente novamente.');
       }
     }, 400);
   };

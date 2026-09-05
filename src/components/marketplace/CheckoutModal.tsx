@@ -91,7 +91,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Step 2: Verification Code & Gateway Integration
   const [generatedSmsCode, setGeneratedSmsCode] = useState('482913');
   const [enteredSmsCode, setEnteredSmsCode] = useState('');
-  const [verificationChannel, setVerificationChannel] = useState<NotificationChannel>('WHATSAPP');
+  const [verificationChannel, setVerificationChannel] = useState<'WHATSAPP' | 'SMS'>('WHATSAPP');
   const [isDispatchingCode, setIsDispatchingCode] = useState(false);
   const [lastDispatchResult, setLastDispatchResult] = useState<SendVerificationResult | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -122,7 +122,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setActiveOrder(null);
       setIsClientVerified(false);
       setVerifyError('');
-      setVerificationChannel(gatewayStatus.defaultChannel || 'WHATSAPP');
+      setVerificationChannel(gatewayStatus.defaultChannel === 'SMS' ? 'SMS' : 'WHATSAPP');
       setLastDispatchResult(null);
       setResendCooldown(0);
       
@@ -245,7 +245,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         productName: product.name
       });
       setLastDispatchResult(result);
-      setVerificationChannel(targetChannel);
+      setVerificationChannel(targetChannel === 'SMS' ? 'SMS' : 'WHATSAPP');
       setResendCooldown(30);
       triggerToast(`Código reenviado com sucesso via ${targetChannel === 'WHATSAPP' ? 'WhatsApp' : 'SMS'}!`);
     } catch (err: any) {

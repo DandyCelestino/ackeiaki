@@ -150,7 +150,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
       setPending2FAEmail(loginEmail.trim().toLowerCase());
       setSimulated2FACode(result.simulated2FACode || '749210');
       setTwoFactorCodeInput('');
-      setSuccessMessage(result.message || 'Código de confirmação em 2 etapas enviado com sucesso.');
+      setSuccessMessage(result.message || 'Código 2FA gerado neste painel.');
       return;
     }
 
@@ -166,7 +166,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
     setErrorMessage(null);
 
     if (!twoFactorCodeInput.trim() || twoFactorCodeInput.trim().length < 6) {
-      setErrorMessage('Por favor, digite o código de 6 dígitos recebido.');
+      setErrorMessage('Por favor, digite o código de 6 dígitos exibido na mensagem interna.');
       return;
     }
 

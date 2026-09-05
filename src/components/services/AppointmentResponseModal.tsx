@@ -18,15 +18,20 @@ import { Order, MerchantServiceResponse } from '../../types';
 import { useApp } from '../../context/AppContext';
 
 interface AppointmentResponseModalProps {
+  isOpen?: boolean;
   order: Order | null;
+  merchantName?: string;
+  merchantOwnerName?: string;
   onClose: () => void;
-  onSuccess: (updatedOrder: Order) => void;
+  onSuccess?: (updatedOrder: Order) => void;
+  onRespondSuccess?: (updatedOrder: Order) => void;
 }
 
 export const AppointmentResponseModal: React.FC<AppointmentResponseModalProps> = ({
   order,
   onClose,
-  onSuccess
+  onSuccess,
+  onRespondSuccess
 }) => {
   const { updateOrderDetailsByMaster, triggerToast, currentUser } = useApp();
 
@@ -98,7 +103,7 @@ export const AppointmentResponseModal: React.FC<AppointmentResponseModalProps> =
       totalAmount: confirmedPrice ? parseFloat(confirmedPrice) : order.totalAmount
     };
 
-    onSuccess(updatedOrder);
+    (onSuccess || onRespondSuccess)?.(updatedOrder);
     triggerToast(`Resposta enviada ao perfil do cliente ${order.customerName}!`);
   };
 

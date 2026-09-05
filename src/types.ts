@@ -3,6 +3,8 @@ export type UserRole = 'CLIENTE' | 'VENDEDOR' | 'MASTER';
 export type MembershipTier = 'GRATIS' | 'BRONZE' | 'PRATA' | 'OURO' | 'PREMIUM';
 
 export interface PlanBenefitRule {
+  title?: string;
+  buyerDataRule?: string;
   tier: MembershipTier;
   name: string;
   badgeLabel: string;
@@ -143,6 +145,7 @@ export interface EmergencyContact {
 }
 
 export interface User {
+  cnpjOrCpf?: string;
   id: string;
   name: string;
   nickname?: string;
@@ -193,6 +196,8 @@ export interface ProductVariation {
 }
 
 export interface Product {
+  image?: string;
+  oldPrice?: number;
   id: string;
   merchantId: string;
   merchantName: string;
@@ -295,6 +300,15 @@ export interface MerchantServiceResponse {
 }
 
 export interface ServiceItem {
+  providerName?: string;
+  duration?: number | string;
+  rating?: number;
+  images?: string[];
+  advanceFeeRequired?: boolean;
+  advanceFeeAmount?: number;
+  pixKey?: string;
+  pixKeyType?: Product['pixKeyType'];
+  pixBeneficiaryName?: string;
   id: string;
   merchantId: string;
   merchantName: string;
@@ -320,6 +334,10 @@ export interface ServiceItem {
 }
 
 export interface StoreMerchant {
+  tradeName?: string;
+  ownerEmail?: string;
+  contactPhone?: string;
+  coverImage?: string;
   id: string;
   name: string;
   ownerName: string;
@@ -367,6 +385,12 @@ export interface StoreMerchant {
 }
 
 export interface Order {
+  customerId?: string;
+  deliveryAddress?: string;
+  paymentMethod?: string;
+  driverName?: string;
+  driverPhone?: string;
+  itemsSummary?: string;
   id: string;
   code: string; // e.g. "RET-8X42K9" or "DEL-9912A"
   orderNumber?: string; // e.g. "#58291"
@@ -389,6 +413,11 @@ export interface Order {
   merchantName: string;
   type: 'PRODUTO' | 'SERVICO';
   items: {
+    id?: string;
+    name?: string;
+    selectedSize?: string;
+    selectedColor?: string;
+    product?: Product;
     productId: string;
     productName: string;
     productImage: string;
@@ -431,6 +460,13 @@ export interface Order {
 }
 
 export interface SystemSettings {
+  defaultCommissionRate?: number;
+  standardDeliveryFee?: number;
+  maxTrialDays?: number;
+  supportPhone?: string;
+  allowCustomerRegistration?: boolean;
+  broadcastAlertEnabled?: boolean;
+  broadcastMessage?: string;
   maintenanceMode: boolean;
   systemBroadcastAlert: string;
   broadcastAlertActive: boolean;
@@ -532,7 +568,7 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedVariations: { [key: string]: string };
-  selectedModality: 'DELIVERY' | 'RETIRADA' | 'EXPERIMENTAÇÃO';
+  selectedModality: 'DELIVERY' | 'RETIRADA' | 'EXPERIMENTAÇÃO' | 'AGENDAMENTO';
 }
 
 export interface CarouselSlide {

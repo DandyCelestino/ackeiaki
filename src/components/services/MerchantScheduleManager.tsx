@@ -28,6 +28,7 @@ import { useApp } from '../../context/AppContext';
 
 interface MerchantScheduleManagerProps {
   merchant: StoreMerchant;
+  onSave?: (merchant: StoreMerchant) => void;
   onSaveSchedule?: (schedule: MerchantScheduleConfig) => void;
   onSavePricing?: (pricing: ServicePricingTable, creds: ProfessionalCredentials, refs: ProfessionalReference[]) => void;
 }

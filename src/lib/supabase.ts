@@ -9,10 +9,12 @@ const supabaseAnonKey =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
   (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || '';
 
-export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true
   }
-}) : null;
+  })
+  : null;
 

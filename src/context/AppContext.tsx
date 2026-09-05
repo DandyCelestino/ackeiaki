@@ -63,6 +63,7 @@ import { AuthPromptModal, AuthPromptDetails } from '../components/marketplace/Au
 import { getCommissionRateForTier, getMaxProductsForTier } from '../data/membershipPlansData';
 import { NotificationService } from '../services/notification_service';
 import { multiStoreDb } from '../services/multiStoreDatabase';
+import { syncAppDataToSupabase, SupabaseSyncResult } from '../services/supabaseAppSync';
 
 export type AppEnvironment = 'MARKETPLACE' | 'SELLER_PORTAL' | 'MASTER_PANEL';
 
@@ -161,12 +162,12 @@ export interface AppContextType {
   setMerchantCommissionRate: (id: string, rate: number) => void;
 
   // Products & Services Management
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Product;
+  addProduct: (product: any) => Product;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   toggleProductStatus: (id: string, status: 'active' | 'paused' | 'draft' | 'archived') => void;
   toggleProductFeatured: (id: string) => void;
-  addService: (service: Omit<ServiceItem, 'id'>) => ServiceItem;
+  addService: (service: any) => ServiceItem;
   updateService: (id: string, updates: Partial<ServiceItem>) => void;
   deleteService: (id: string) => void;
   
@@ -186,10 +187,11 @@ export interface AppContextType {
   exportFullDatabaseSnapshot: () => string;
   importFullDatabaseSnapshot: (jsonString: string) => boolean;
   resetDatabaseToDefaults: () => void;
+  syncAppDataToSupabase: () => Promise<SupabaseSyncResult>;
 
   // Cart & Favorites
   addToCart: (item: CartItem) => void;
-  removeFromCart: (index: number) => void;
+  removeFromCart: (indexOrProductId: number | string) => void;
   clearCart: () => void;
   toggleFavorite: (productId: string) => void;
   isFavorite: (productId: string) => boolean;
@@ -234,7 +236,7 @@ export interface AppContextType {
     details?: AuthPromptDetails;
   };
   promptAuthRequirement: (
-    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL',
+    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL' | string,
     details?: AuthPromptDetails
   ) => void;
   closeAuthPromptModal: () => void;
@@ -500,17 +502,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const promptAuthRequirement = (
-    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL',
+    actionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL' | string,
     details?: AuthPromptDetails
   ) => {
+    const normalizedActionType: 'COMPRA' | 'AGENDAMENTO' | 'GERAL' =
+      actionType === 'COMPRA' || actionType === 'AGENDAMENTO' ? actionType : 'GERAL';
     setAuthPromptModal({
       isOpen: true,
-      actionType,
+      actionType: normalizedActionType,
       details
     });
-    if (actionType === 'COMPRA') {
+    if (normalizedActionType === 'COMPRA') {
       triggerToast('Atenção: Cadastre-se ou faça login para realizar compras.');
-    } else if (actionType === 'AGENDAMENTO') {
+    } else if (normalizedActionType === 'AGENDAMENTO') {
       triggerToast('Atenção: Cadastre-se ou faça login para agendar serviços.');
     } else {
       triggerToast('Atenção: Cadastre-se ou faça login para continuar.');
@@ -1632,10 +1636,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Check password if configured on user
-      if (found.password && password && found.password !== password) {
+      if (!found.password || !password || found.password !== password) {
         return {
           success: false,
-          message: 'Senha incorreta. Verifique suas credenciais de acesso.'
+          message: 'Esta conta precisa ser configurada no Supabase Auth antes do acesso.'
         };
       }
 
@@ -1644,16 +1648,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const isHighPrivilege = found.role === 'MASTER' || found.role === 'VENDEDOR' || found.twoFactorEnabled;
 
       if (isHighPrivilege) {
-        const simulatedCode = '749210';
-        sessionStorage.setItem(`2fa_code_${cleanEmail}`, simulatedCode);
+        const internalCode = Math.floor(100000 + Math.random() * 900000).toString();
+        sessionStorage.setItem(`2fa_code_${cleanEmail}`, internalCode);
         addAuditLog('2FA_REQUESTED', `Código de 2ª etapa gerado para ${found.email} (${found.role})`);
         
         return {
           success: false,
           requires2FA: true,
-          simulated2FACode: simulatedCode,
+          simulated2FACode: internalCode,
           user: found,
-          message: `Código de verificação em 2 etapas (2FA) enviado para ${found.phone || found.email}.`
+          message: 'Código 2FA gerado neste painel. Use o código exibido abaixo para confirmar o acesso.'
         };
       }
 
@@ -1714,10 +1718,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Usuário não localizado no sistema.' };
     }
 
-    const storedCode = sessionStorage.getItem(`2fa_code_${cleanEmail}`) || '749210';
+    const storedCode = sessionStorage.getItem(`2fa_code_${cleanEmail}`);
     
     // Accept valid 2FA code
-    if (cleanCode === storedCode || cleanCode === '749210' || cleanCode === '123456') {
+    if (storedCode && cleanCode === storedCode) {
       const updatedUser: User = {
         ...found,
         lastLogin: new Date().toISOString()
@@ -1747,12 +1751,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resendTwoFactorCode = (email: string): { success: boolean; message: string; simulatedCode: string } => {
     const cleanEmail = email.trim().toLowerCase();
-    const simulatedCode = '749210';
+    const simulatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     sessionStorage.setItem(`2fa_code_${cleanEmail}`, simulatedCode);
     addAuditLog('2FA_RESENT', `Reenvio de código 2FA solicitado para ${cleanEmail}`);
     return {
       success: true,
-      message: 'Novo código de segurança 2FA enviado com sucesso via SMS/WhatsApp!',
+      message: 'Nova mensagem de segurança gerada neste painel. Use o código exibido abaixo.',
       simulatedCode
     };
   };
@@ -2648,7 +2652,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return {
       success: true,
       message: `Código ${cleanCode} validado com sucesso! Pedido ${found.orderNumber || found.code} entregue ao cliente ${found.customerName}.`,
-      order: { ...found, status: 'Concluído' }
+      order: { ...found, status: 'Concluído' as OrderStatus }
     };
   };
 
@@ -3065,6 +3069,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('SYSTEM_RESET_DEFAULT', 'Base de dados restaurada para o padrão inicial de fábrica');
     triggerToast('Sistema restaurado para os dados originais padrão!');
   };
+
+  const syncCurrentDataToSupabase = () => syncAppDataToSupabase({
+    users,
+    merchants,
+    products,
+    services,
+    orders,
+    notifications,
+    auditLogs,
+    systemSettings
+  });
 
   // Inter-Category Banners Operations
   const addInterCategoryBanner = (bannerData: Omit<InterCategoryBanner, 'id' | 'createdAt'>): InterCategoryBanner => {
@@ -3558,6 +3573,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exportFullDatabaseSnapshot,
         importFullDatabaseSnapshot,
         resetDatabaseToDefaults,
+        syncAppDataToSupabase: syncCurrentDataToSupabase,
         addToCart,
         removeFromCart,
         clearCart,

@@ -128,7 +128,7 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
         }
       },
       modality: 'AGENDAMENTO',
-      status: 'Pendente',
+      status: 'Aguardando',
       totalAmount: finalPrice
     });
 

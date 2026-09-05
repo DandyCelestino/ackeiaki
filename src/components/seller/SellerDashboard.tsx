@@ -247,13 +247,13 @@ export const SellerDashboard: React.FC = () => {
     setAllowAppointment(prod.availableModalities?.includes('AGENDAMENTO' as any) ?? true);
     setAdvanceFeeRequired(prod.advanceFeeRequired || false);
     setAdvanceFeeAmount(prod.advanceFeeAmount ? prod.advanceFeeAmount.toString().replace('.', ',') : '');
-    setPixKeyType(prod.pixKeyType || 'CPF');
+    setPixKeyType((prod.pixKeyType || 'CPF') as any);
     setPixKey(prod.pixKey || '');
     setPixBeneficiaryName(prod.pixBeneficiaryName || '');
-    setFurnitureActionType(prod.furnitureActionType || 'BOTH');
+    setFurnitureActionType((prod.furnitureActionType || 'BOTH') as any);
     setRentPrice(prod.rentPrice ? prod.rentPrice.toString().replace('.', ',') : '');
-    setRentPeriod(prod.rentPeriod || 'MES');
-    setVehicleActionType(prod.vehicleActionType || 'BOTH');
+    setRentPeriod((prod.rentPeriod || 'MES') as any);
+    setVehicleActionType((prod.vehicleActionType || 'BOTH') as any);
     setVehicleYear(prod.vehicleYear || '');
     setVehicleKm(prod.vehicleKm || '');
     setIsAddModalOpen(true);
@@ -1380,7 +1380,7 @@ export const SellerDashboard: React.FC = () => {
                   .filter((o) => o.modality === 'AGENDAMENTO' || o.modality === 'EXPERIMENTAÇÃO')
                   .map((booking) => {
                     const resp = booking.serviceDetails?.merchantResponse;
-                    const isPending = !resp || resp.status === 'PENDENTE' || booking.status === 'Pendente';
+                    const isPending = !resp || resp.status === 'PENDENTE';
                     const isConfirmed = resp?.status === 'CONFIRMADO' || booking.status === 'Confirmado';
                     const isRescheduled = resp?.status === 'REAGENDADO';
                     const isCompleted = booking.status === 'Concluído' || resp?.status === 'CONCLUIDO';

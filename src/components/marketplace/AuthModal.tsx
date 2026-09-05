@@ -538,7 +538,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </h4>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Acesso de alta segurança para <span className="font-bold text-slate-800">{pending2FAName}</span> ({pending2FARole}).
-                  Digite o código de verificação de 6 dígitos gerado para o seu dispositivo.
+                  Uma mensagem interna foi gerada nesta tela. Digite o código exibido para liberar o acesso.
                 </p>
               </div>
 
@@ -547,7 +547,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start space-x-2.5">
                   <KeyRound className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="font-bold">Código de Segurança Token (SMS/WhatsApp):</p>
+                    <p className="font-bold">Mensagem interna de segurança:</p>
                     <div className="flex items-center space-x-2">
                       <span className="font-mono text-sm font-extrabold tracking-widest bg-white px-2 py-0.5 rounded border border-amber-300 text-slate-900">
                         {simulated2FACode}
@@ -611,7 +611,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isResending2FA ? 'animate-spin' : ''}`} />
-                      <span>Reenviar código</span>
+                      <span>Gerar nova mensagem</span>
                     </button>
                   </div>
                 </div>
