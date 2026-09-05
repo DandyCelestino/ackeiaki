@@ -44,6 +44,11 @@ export async function syncAppDataToSupabase(input: SupabaseSyncInput): Promise<S
       .limit(1);
     if (permissionCheckError) {
       const message = permissionCheckError.message.toLowerCase();
+      if (message.includes('pgrst205') || message.includes('could not find the table')) {
+        throw new Error(
+          'Schema do Supabase nao aplicado: execute supabase_app_schema.sql no SQL Editor e tente novamente.'
+        );
+      }
       if (message.includes('fetch') || message.includes('network') || message.includes('dns')) {
         throw new Error('Nao foi possivel conectar ao Supabase. Confira VITE_SUPABASE_URL e a disponibilidade do projeto.');
       }

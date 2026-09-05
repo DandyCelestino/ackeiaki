@@ -38,6 +38,7 @@ export const MasterSettingsView: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetConfirmWord, setResetConfirmWord] = useState('');
+  const [isSyncingWithSupabase, setIsSyncingWithSupabase] = useState(false);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,14 +71,20 @@ export const MasterSettingsView: React.FC = () => {
   };
 
   const handleSupabaseSync = async () => {
+    if (isSyncingWithSupabase) return;
+    setIsSyncingWithSupabase(true);
     triggerToast('Sincronização com Supabase iniciada...');
-    const result = await syncAppDataToSupabase();
-    if (!result.ok) {
-      triggerToast(`Falha na sincronização: ${result.error || 'verifique o schema e as credenciais.'}`);
-      return;
+    try {
+      const result = await syncAppDataToSupabase();
+      if (!result.ok) {
+        triggerToast(`Falha na sincronização: ${result.error || 'verifique o schema e as credenciais.'}`);
+        return;
+      }
+      const total = Object.values(result.synced).reduce((sum, count) => sum + count, 0);
+      triggerToast(`${total} registros sincronizados com o Supabase.`);
+    } finally {
+      setIsSyncingWithSupabase(false);
     }
-    const total = Object.values(result.synced).reduce((sum, count) => sum + count, 0);
-    triggerToast(`${total} registros sincronizados com o Supabase.`);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -377,10 +384,12 @@ export const MasterSettingsView: React.FC = () => {
 
             <button
               onClick={handleSupabaseSync}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center space-x-2 transition-colors shadow-xs"
+              disabled={isSyncingWithSupabase}
+              title="Executa a sincronização oficial dos dados do Administrador Master com o Supabase"
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-wait text-white rounded-xl font-bold flex items-center justify-center space-x-2 transition-colors shadow-xs"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Sincronizar dados com Supabase</span>
+              <RefreshCw className={`w-4 h-4 ${isSyncingWithSupabase ? 'animate-spin' : ''}`} />
+              <span>{isSyncingWithSupabase ? 'Sincronização em andamento...' : 'Sincronização oficial Master'}</span>
             </button>
           </div>
 

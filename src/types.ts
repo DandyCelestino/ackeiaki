@@ -1090,6 +1090,7 @@ export interface SubOrderMessage {
   senderName: string; // Nome do remetente
   senderRole: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'SISTEMA'; // Papel do remetente
   recipientId?: string; // Destinatário específico (opcional)
+  recipientIds?: string[]; // Destinatários específicos adicionais para eventos do sistema
   recipientName?: string;
   recipientRole?: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'ALL';
   message: string; // Texto da mensagem

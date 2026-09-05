@@ -303,6 +303,7 @@ export interface AppContextType {
     message: string;
     systemEventType?: string;
     statusBadge?: string;
+    recipientIds?: string[];
     recipientRole?: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'ALL';
   }) => SubOrderMessage;
   dispatchOrderStatusSystemMessage: (
@@ -318,7 +319,7 @@ export interface AppContextType {
   ) => SubOrderMessage;
   receiveSubOrderMessage: (message: SubOrderMessage) => void;
   markSubOrderMessagesAsRead: (subpedidoId: string, userId?: string) => void;
-  getSubOrderMessages: (subpedidoId: string) => SubOrderMessage[];
+  getSubOrderMessages: (subpedidoId: string, user?: User | null) => SubOrderMessage[];
   getUnreadSubOrderMessagesCount: (subpedidoId: string, userId?: string) => number;
   deleteSubOrderMessage: (messageId: string) => void;
 }
@@ -1376,6 +1377,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [currentUser, logMessageEvent]
   );
 
+  const isSubOrderMessageVisibleToUser = useCallback(
+    (message: SubOrderMessage, user?: User | null): boolean => {
+      if (!user) return false;
+      if (user.role === 'MASTER' || message.senderId === user.id) return true;
+
+      const recipientIds = [message.recipientId, ...(message.recipientIds || [])].filter(Boolean);
+      if (recipientIds.includes(user.id)) return true;
+      if (user.merchantId && recipientIds.includes(user.merchantId)) return true;
+
+      return message.recipientRole === user.role;
+    },
+    []
+  );
+
   const sendSubOrderSystemMessage = useCallback(
     (params: {
       subpedidoId: string;
@@ -1384,6 +1399,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       message: string;
       systemEventType?: string;
       statusBadge?: string;
+      recipientIds?: string[];
       recipientRole?: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'ALL';
     }): SubOrderMessage => {
       const newMsg: SubOrderMessage = {
@@ -1394,7 +1410,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         senderId: 'sistema-achei-aqui',
         senderName: 'Sistema Achei Aqui',
         senderRole: 'SISTEMA',
-        recipientRole: params.recipientRole || 'ALL',
+        recipientIds: params.recipientIds,
+        recipientRole: params.recipientRole,
         message: params.message,
         systemEventType: params.systemEventType,
         statusBadge: params.statusBadge,
@@ -1436,6 +1453,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ): SubOrderMessage => {
       const subId = (order as any).subpedidos?.[0]?.id || `sub-${order.id}`;
       const subCode = (order as any).subpedidos?.[0]?.codigoSubpedido || `#${order.orderNumber || order.code}-A`;
+      const subpedido = (order as any).subpedidos?.[0];
 
       let icon = '🔄';
       let statusText = `Status atualizado para "${newStatus}"`;
@@ -1483,7 +1501,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         codigoSubpedido: subCode,
         message: fullMessage,
         systemEventType: 'STATUS_CHANGED',
-        statusBadge: newStatus
+        statusBadge: newStatus,
+        recipientIds: [order.userId, order.customerId, order.merchantId, subpedido?.lojaId].filter(Boolean)
       });
     },
     [sendSubOrderSystemMessage]
@@ -1497,6 +1516,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ): SubOrderMessage => {
       const subId = (order as any).subpedidos?.[0]?.id || `sub-${order.id}`;
       const subCode = (order as any).subpedidos?.[0]?.codigoSubpedido || `#${order.orderNumber || order.code}-A`;
+      const subpedido = (order as any).subpedidos?.[0];
 
       let message = '';
       let badge = '';
@@ -1520,7 +1540,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         codigoSubpedido: subCode,
         message,
         systemEventType: eventType === 'MERCHANT_PAID' ? 'COMMISSION_PAID' : 'COMMISSION_CONFIRMED',
-        statusBadge: badge
+        statusBadge: badge,
+        recipientIds: [order.userId, order.customerId, order.merchantId, subpedido?.lojaId].filter(Boolean)
       });
     },
     [sendSubOrderSystemMessage]
@@ -1545,7 +1566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setSubOrderMessages((prev) =>
         prev.map((msg) => {
-          if (msg.subpedidoId === subpedidoId) {
+          if (msg.subpedidoId === subpedidoId && isSubOrderMessageVisibleToUser(msg, currentUser)) {
             if (msg.readBy.includes(effectiveUserId)) return msg;
             return { ...msg, readBy: [...msg.readBy, effectiveUserId] };
           }
@@ -1553,16 +1574,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
       );
     },
-    [currentUser]
+    [currentUser, isSubOrderMessageVisibleToUser]
   );
 
   const getSubOrderMessages = useCallback(
-    (subpedidoId: string): SubOrderMessage[] => {
+    (subpedidoId: string, user?: User | null): SubOrderMessage[] => {
       return subOrderMessages
-        .filter((m) => m.subpedidoId === subpedidoId)
+        .filter((m) => m.subpedidoId === subpedidoId && isSubOrderMessageVisibleToUser(m, user || currentUser))
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     },
-    [subOrderMessages]
+    [subOrderMessages, currentUser, isSubOrderMessageVisibleToUser]
   );
 
   const getUnreadSubOrderMessagesCount = useCallback(
@@ -1573,11 +1594,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return subOrderMessages.filter(
         (m) =>
           m.subpedidoId === subpedidoId &&
+          isSubOrderMessageVisibleToUser(m, currentUser) &&
           m.senderId !== effectiveUserId &&
           !m.readBy.includes(effectiveUserId)
       ).length;
     },
-    [subOrderMessages, currentUser]
+    [subOrderMessages, currentUser, isSubOrderMessageVisibleToUser]
   );
 
   const deleteSubOrderMessage = useCallback((messageId: string) => {
@@ -2459,7 +2481,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       codigoSubpedido: initialSubCode,
       message: `📦 [HISTÓRICO OFICIAL] Pedido ${newOrder.orderNumber || newOrder.code} gerado (${newOrder.modality}). Código de segurança: ${newOrder.securityCode || newOrder.pickupCode || 'N/A'}. Aguardando confirmação do estabelecimento.`,
       systemEventType: 'ORDER_CREATED',
-      statusBadge: newOrder.status || 'Pendente'
+      statusBadge: newOrder.status || 'Pendente',
+      recipientIds: [newOrder.userId, newOrder.customerId, newOrder.merchantId].filter(Boolean)
     });
 
     // Disparo de notificação transacional via NotificationService (com Supabase e WhatsApp)

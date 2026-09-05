@@ -12,6 +12,10 @@ No Supabase Dashboard, abra **SQL Editor**, cole e execute nesta ordem:
 2. `supabase_app_schema.sql`
 3. `supabase_migration_2026-09-04.sql`
 
+A sincronizacao do painel Master exige que `supabase_app_schema.sql` seja executado
+com uma conta administrativa no SQL Editor. Sem esse passo, a API retorna `PGRST205`
+porque a tabela `app_settings` ainda nao existe.
+
 O segundo script cria as tabelas `app_*` usadas pela sincronizacao do painel Master. A terceira migracao cria `notification_deliveries`, usada pelo servico de notificacoes, com RLS e indices.
 
 ## 3. Verificacao

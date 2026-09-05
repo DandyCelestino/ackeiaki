@@ -32,7 +32,8 @@ export const SubOrderChatModal: React.FC = () => {
     currentUser,
     sendInAppNotification,
     triggerToast,
-    merchants
+    merchants,
+    getSubOrderMessages
   } = useApp();
 
   const [inputText, setInputText] = useState('');
@@ -51,7 +52,7 @@ export const SubOrderChatModal: React.FC = () => {
   const orderTitle = activeChatSubOrder?.orderTitle;
 
   // Filtrar mensagens deste subpedido
-  const currentMessages = subOrderMessages.filter((m) => m.subpedidoId === subpedidoId);
+  const currentMessages = subpedidoId ? getSubOrderMessages(subpedidoId, currentUser) : [];
 
   // Marcar como lida ao abrir ou ao receber novas mensagens
   useEffect(() => {
