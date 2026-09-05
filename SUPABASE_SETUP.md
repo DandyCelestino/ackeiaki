@@ -9,9 +9,10 @@ Preencha `.env.local` com a URL e a chave publica do projeto Supabase. Nunca col
 No Supabase Dashboard, abra **SQL Editor**, cole e execute nesta ordem:
 
 1. `schema_multiloja.sql`
-2. `supabase_migration_2026-09-04.sql`
+2. `supabase_app_schema.sql`
+3. `supabase_migration_2026-09-04.sql`
 
-A segunda migracao cria `notification_deliveries`, usada pelo servico de notificacoes, com RLS e indices.
+O segundo script cria as tabelas `app_*` usadas pela sincronizacao do painel Master. A terceira migracao cria `notification_deliveries`, usada pelo servico de notificacoes, com RLS e indices.
 
 ## 3. Verificacao
 
@@ -20,10 +21,11 @@ Execute no SQL Editor:
 ```sql
 select to_regclass('public.lojas') as lojas,
        to_regclass('public.produtos') as produtos,
+    to_regclass('public.app_settings') as app_settings,
        to_regclass('public.notification_deliveries') as notificacoes;
 ```
 
-O resultado esperado e uma linha com os tres nomes preenchidos.
+O resultado esperado e uma linha com os quatro nomes preenchidos.
 
 ## Estado atual
 
@@ -34,3 +36,5 @@ O botao de sincronizacao do painel Master faz a verificacao do schema e tenta en
 ## Diagnostico observado
 
 A URL configurada `https://xootmi7yjqr7.supabase.co` nao respondeu por DNS no ambiente local. Confirme no Dashboard se o projeto ainda existe e copie novamente a URL em **Project Settings > API**. Depois reinicie `npm run dev`.
+
+O login Master atual ainda usa `VITE_MASTER_PASSWORD` no frontend. Essa configuracao e apenas temporaria para o prototipo: qualquer segredo em `VITE_*` fica visivel no navegador. Antes de producao, migre esse login para Supabase Auth ou para uma Edge Function e remova a senha do `.env.local` publico.
