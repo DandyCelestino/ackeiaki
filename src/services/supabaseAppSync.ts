@@ -38,15 +38,20 @@ export async function syncAppDataToSupabase(input: SupabaseSyncInput): Promise<S
   };
 
   try {
-    // A chave publica nao deve receber permissao de escrita nas tabelas de dominio.
-    // A sincronizacao completa deve ser executada por uma Edge Function autenticada.
     const { error: permissionCheckError } = await supabase
       .from('app_settings')
       .select('id')
       .limit(1);
     if (permissionCheckError) {
+      const message = permissionCheckError.message.toLowerCase();
+      if (message.includes('fetch') || message.includes('network') || message.includes('dns')) {
+        throw new Error('Nao foi possivel conectar ao Supabase. Confira VITE_SUPABASE_URL e a disponibilidade do projeto.');
+      }
       throw new Error(`Supabase indisponivel ou schema ausente: ${permissionCheckError.message}`);
     }
+
+    // A chave publica nao deve receber permissao de escrita nas tabelas de dominio.
+    // A sincronizacao completa deve ser executada por uma Edge Function autenticada.
 
     await upsert('app_users', input.users.map((user) => ({
       id: user.id,
@@ -130,6 +135,14 @@ export async function syncAppDataToSupabase(input: SupabaseSyncInput): Promise<S
 
     return { ok: true, synced };
   } catch (error) {
-    return { ok: false, synced, error: error instanceof Error ? error.message : 'Falha ao sincronizar dados.' };
+    const errorMessage = error instanceof Error ? error.message : 'Falha ao sincronizar dados.';
+    if (errorMessage.toLowerCase().includes('row-level security') || errorMessage.toLowerCase().includes('permission denied')) {
+      return {
+        ok: false,
+        synced,
+        error: 'O Supabase respondeu, mas bloqueou a escrita por RLS. Use uma Edge Function autenticada para sincronizar o backup completo.'
+      };
+    }
+    return { ok: false, synced, error: errorMessage };
   }
 }
