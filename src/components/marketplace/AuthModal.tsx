@@ -30,6 +30,7 @@ import { INITIAL_USERS } from '../../data/initialData';
 import { CATEGORIES_TAXONOMY, getSubcategoriesByCategory } from '../../data/categoryTaxonomy';
 import { MEMBERSHIP_PLANS } from '../../data/membershipPlansData';
 import { MembershipTier } from '../../types';
+import { ImageUploadDropzone } from '../common/ImageUploadDropzone';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -94,6 +95,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [customerRefPhone, setCustomerRefPhone] = useState('');
   const [customerTier, setCustomerTier] = useState<MembershipTier>('GRATIS');
   const [customerTermsAccepted, setCustomerTermsAccepted] = useState(true);
+  const [customerAvatar, setCustomerAvatar] = useState('');
 
   // Merchant / Provider registration state
   const [merchantType, setMerchantType] = useState<'STORE' | 'SERVICE_PROVIDER'>('SERVICE_PROVIDER');
@@ -114,6 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [merchantZipCode, setMerchantZipCode] = useState('28680-000');
   const [merchantDesc, setMerchantDesc] = useState('');
   const [merchantHours, setMerchantHours] = useState('08:00 às 18:00');
+  const [merchantAvatar, setMerchantAvatar] = useState('');
   
   // Mandatory Professional References (minimum 2)
   const [ref1Name, setRef1Name] = useState('');
@@ -211,6 +214,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (!customerAvatar.trim()) {
+      setErrorMessage('A foto do perfil é obrigatória. Envie uma foto do seu celular ou computador.');
+      return;
+    }
+
     if (!customerCpf.trim()) {
       setErrorMessage('O CPF é obrigatório para validação de segurança e emissão de notas.');
       return;
@@ -265,6 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         references,
         city: currentCity,
         membershipTier: customerTier
+        ,avatar: customerAvatar
       },
       customerPassword,
       customerTier
@@ -278,6 +287,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     if (!merchantStoreName.trim() || !merchantOwnerName.trim() || !merchantEmail.trim() || !merchantPassword.trim()) {
       setErrorMessage('Preencha os campos obrigatórios do responsável e do serviço/loja.');
+      return;
+    }
+
+    if (!merchantAvatar.trim()) {
+      setErrorMessage('A foto do responsável é obrigatória. Envie uma foto do seu celular ou computador.');
       return;
     }
 
@@ -363,6 +377,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         name: merchantOwnerName,
         email: merchantEmail,
         phone: merchantPhone,
+        avatar: merchantAvatar,
         cpf: merchantCnpjOrCpf,
         idDocument: merchantIdDocument,
         references,
