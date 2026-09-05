@@ -492,7 +492,14 @@ export interface Banner {
 
 export type NotificationChannel = 'IN_APP' | 'SYSTEM' | 'WHATSAPP' | 'SMS' | 'EMAIL' | 'PUSH';
 export type NotificationStatus = 'SENT' | 'DELIVERED' | 'FAILED' | 'PENDING';
-export type NotificationAudience = 'ALL' | 'ALL_MERCHANTS' | 'ALL_CUSTOMERS' | 'SPECIFIC_USER' | 'SPECIFIC_MERCHANT';
+export type NotificationAudience =
+  | 'ALL'
+  | 'ALL_MERCHANTS'
+  | 'ALL_SELLERS'
+  | 'ALL_SERVICE_PROVIDERS'
+  | 'ALL_CUSTOMERS'
+  | 'SPECIFIC_USER'
+  | 'SPECIFIC_MERCHANT';
 export type NotificationCategory = 'SISTEMA' | 'PEDIDO' | 'COMUNICADO' | 'COMISSAO' | 'PROMO' | 'SEGURANCA' | 'AVISO' | 'URGENTE';
 export type NotificationPriority = 'NORMAL' | 'HIGH' | 'URGENT';
 

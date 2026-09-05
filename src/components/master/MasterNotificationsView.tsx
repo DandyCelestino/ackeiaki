@@ -99,6 +99,10 @@ export const MasterNotificationsView: React.FC = () => {
 
       if (targetAudience === 'ALL_MERCHANTS') {
         recipientName = 'Todos os Lojistas & Prestadores';
+      } else if (targetAudience === 'ALL_SELLERS') {
+        recipientName = 'Todos os Vendedores';
+      } else if (targetAudience === 'ALL_SERVICE_PROVIDERS') {
+        recipientName = 'Todos os Prestadores de Serviços';
       } else if (targetAudience === 'ALL_CUSTOMERS') {
         recipientName = 'Todos os Clientes';
       } else if (targetAudience === 'SPECIFIC_USER') {
@@ -262,7 +266,8 @@ export const MasterNotificationsView: React.FC = () => {
                 className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-600 transition-colors"
               >
                 <option value="ALL">📢 Todos os Usuários da Plataforma (Broadcast Geral)</option>
-                <option value="ALL_MERCHANTS">🏪 Todos os Lojistas & Prestadores de Serviço</option>
+                <option value="ALL_SELLERS">🏪 Todos os Vendedores</option>
+                <option value="ALL_SERVICE_PROVIDERS">🛠️ Todos os Prestadores de Serviços</option>
                 <option value="ALL_CUSTOMERS">🛍️ Todos os Clientes & Consumidores</option>
                 <option value="SPECIFIC_MERCHANT">🎯 Lojista / Loja Específica</option>
                 <option value="SPECIFIC_USER">👤 Cliente / Usuário Específico</option>

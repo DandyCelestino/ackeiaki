@@ -53,6 +53,7 @@ import { MasterSettingsView } from './MasterSettingsView';
 import { MasterAdSpacesView } from './MasterAdSpacesView';
 import { MasterFrontendView } from './MasterFrontendView';
 import { NotificationMonitor } from './NotificationMonitor';
+import { MasterNotificationsView } from './MasterNotificationsView';
 import { MasterReportsView } from './MasterReportsView';
 import { MasterDossierModal } from './MasterDossierModal';
 
@@ -367,8 +368,8 @@ export const MasterAdminPanel: React.FC = () => {
                   : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
               }`}
             >
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              <span>Disparos WhatsApp / API</span>
+              <Megaphone className="w-4 h-4 shrink-0" />
+              <span>Enviar Mensagens</span>
             </button>
 
             {/* Parâmetros & Backup */}
@@ -712,6 +713,7 @@ export const MasterAdminPanel: React.FC = () => {
             {/* TAB: NOTIFICAÇÕES */}
             {activeTab === 'notifications' && (
               <div className="space-y-4">
+                <MasterNotificationsView />
                 <NotificationMonitor />
               </div>
             )}

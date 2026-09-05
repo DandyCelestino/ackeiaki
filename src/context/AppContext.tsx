@@ -1114,10 +1114,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return notifications.filter((n) => {
         if (n.recipientUserId && n.recipientUserId === targetUser.id) return true;
         if (targetUser.merchantId && n.recipientMerchantId === targetUser.merchantId) return true;
+        if (n.audience === 'ALL') return true;
+        if (n.audience === 'ALL_CUSTOMERS') return targetUser.role === 'CLIENTE';
+        if (n.audience === 'ALL_MERCHANTS' || n.audience === 'ALL_SELLERS') {
+          return targetUser.role === 'VENDEDOR';
+        }
+        if (n.audience === 'ALL_SERVICE_PROVIDERS' && targetUser.role === 'VENDEDOR') {
+          const merchant = targetUser.merchantId
+            ? merchants.find((item) => item.id === targetUser.merchantId)
+            : undefined;
+          return Boolean(merchant?.isServiceProvider || merchant?.offeredItemTypes?.includes('SERVICO'));
+        }
         return false;
       });
     },
-    [notifications, currentUser]
+    [notifications, currentUser, merchants]
   );
 
   const getUnreadNotificationsCount = useCallback(
