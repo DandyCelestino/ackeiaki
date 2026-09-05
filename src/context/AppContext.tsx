@@ -1616,6 +1616,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     simulated2FACode?: string;
   } => {
     const cleanEmail = email.trim().toLowerCase();
+    const configuredMasterPassword =
+      typeof import.meta !== 'undefined' ? import.meta.env.VITE_MASTER_PASSWORD : undefined;
     
     // Check in users list or initial fallback
     let found = users.find((u) => u.email.toLowerCase() === cleanEmail) ||
@@ -1635,11 +1637,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
 
-      // Check password if configured on user
-      if (!found.password || !password || found.password !== password) {
+      // The Master account is configured through the local environment, while
+      // regular accounts continue using their stored password.
+      const isConfiguredMasterLogin =
+        found.role === 'MASTER' &&
+        cleanEmail === 'telecom.david@gmail.com' &&
+        Boolean(configuredMasterPassword) &&
+        password === configuredMasterPassword;
+
+      if ((!found.password || !password || found.password !== password) && !isConfiguredMasterLogin) {
         return {
           success: false,
-          message: 'Esta conta precisa ser configurada no Supabase Auth antes do acesso.'
+          message: 'E-mail ou senha inválidos. Verifique suas credenciais de acesso.'
         };
       }
 

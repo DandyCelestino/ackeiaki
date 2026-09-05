@@ -1,4 +1,4 @@
-# Configuracao do Supabase
+npm run dev# Configuracao do Supabase
 
 ## 1. Credenciais
 
