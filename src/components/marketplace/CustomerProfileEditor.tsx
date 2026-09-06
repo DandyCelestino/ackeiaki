@@ -409,7 +409,7 @@ export const CustomerProfileEditor: React.FC = () => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
       {/* Header with completeness badge */}
-      <div className="bg-gradient-to-r from-slate-900 to-blue-950 p-6 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div className="bg-linear-to-r from-slate-900 to-blue-950 p-6 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-center space-x-4">
           <div className="relative group">
             {avatar ? (

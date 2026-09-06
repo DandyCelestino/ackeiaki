@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-900/10 shadow-xs">
       {/* Top Banner Verde Serra da Mata */}
-      <div className="relative bg-gradient-to-r from-emerald-950 via-emerald-900 to-green-950 text-emerald-100 text-[11px] font-semibold py-1.5 px-3 sm:px-6 overflow-hidden">
+      <div className="relative bg-linear-to-r from-emerald-950 via-emerald-900 to-green-950 text-emerald-100 text-[11px] font-semibold py-1.5 px-3 sm:px-6 overflow-hidden">
         {/* Background Image Layer */}
         <div className="absolute inset-0 opacity-20 mix-blend-luminosity pointer-events-none">
           <img
@@ -262,7 +262,7 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className="flex items-center space-x-2 text-left focus:outline-none group"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-800 to-green-600 text-white font-black text-base sm:text-xl flex items-center justify-center shadow-md shadow-emerald-800/20 group-hover:scale-105 transition-transform shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-linear-to-tr from-emerald-800 to-green-600 text-white font-black text-base sm:text-xl flex items-center justify-center shadow-md shadow-emerald-800/20 group-hover:scale-105 transition-transform shrink-0">
                 {frontendConfig?.logoLetter || 'A'}
               </div>
               <div>
@@ -282,7 +282,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold text-emerald-900 transition-colors"
               >
                 <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                <span className="max-w-[130px] truncate">{currentCity}</span>
+                <span className="max-w-32.5 truncate">{currentCity}</span>
                 <ChevronDown className="w-3 h-3 text-emerald-600" />
               </button>
 
@@ -414,7 +414,7 @@ export const Header: React.FC<HeaderProps> = ({
                               className="w-7 h-7 rounded-lg object-cover border border-emerald-100"
                             />
                             <div>
-                              <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 truncate max-w-[220px]">
+                              <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 truncate max-w-55">
                                 {prod.name}
                               </p>
                               <p className="text-[10px] text-slate-500">
@@ -660,7 +660,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setCurrentTab('account');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex items-center justify-center space-x-1 py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 rounded-xl border border-emerald-200 text-xs font-bold transition-all active:scale-95 shadow-xs relative min-h-[44px]"
+              className="flex items-center justify-center space-x-1 py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 rounded-xl border border-emerald-200 text-xs font-bold transition-all active:scale-95 shadow-xs relative min-h-11"
             >
               <Heart className={`w-4 h-4 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : 'text-emerald-700'}`} />
               <span className="text-[11px]">Gostei</span>
@@ -675,7 +675,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="mobile-action-cart"
               onClick={onOpenCart}
-              className="flex items-center justify-center space-x-1 py-2 px-1 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl border border-emerald-900 text-xs font-bold transition-all active:scale-95 shadow-xs relative min-h-[44px]"
+              className="flex items-center justify-center space-x-1 py-2 px-1 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl border border-emerald-900 text-xs font-bold transition-all active:scale-95 shadow-xs relative min-h-11"
             >
               <ShoppingBag className="w-4 h-4 text-white" />
               <span className="text-[11px]">Carrinho</span>
@@ -696,7 +696,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onOpenAuth('login');
                 }
               }}
-              className="flex items-center justify-center space-x-1 py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 rounded-xl border border-emerald-200 text-xs font-bold transition-all active:scale-95 shadow-xs truncate min-h-[44px]"
+              className="flex items-center justify-center space-x-1 py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 rounded-xl border border-emerald-200 text-xs font-bold transition-all active:scale-95 shadow-xs truncate min-h-11"
             >
               <UserIcon className="w-4 h-4 text-emerald-700 shrink-0" />
               <span className="text-[11px] truncate">
@@ -708,10 +708,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="mobile-action-location"
               onClick={() => setShowCityDropdown(!showCityDropdown)}
-              className="flex items-center justify-center space-x-0.5 py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 rounded-xl border border-emerald-200 text-xs font-bold transition-all active:scale-95 shadow-xs truncate min-h-[44px]"
+              className="flex items-center justify-center space-x-0.5 py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 rounded-xl border border-emerald-200 text-xs font-bold transition-all active:scale-95 shadow-xs truncate min-h-11"
             >
               <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-              <span className="text-[10px] truncate max-w-[55px]">
+              <span className="text-[10px] truncate max-w-13.75">
                 {currentCity.split(',')[0].replace(' - Cachoeiras', '')}
               </span>
               <ChevronDown className="w-2.5 h-2.5 text-emerald-600 shrink-0" />

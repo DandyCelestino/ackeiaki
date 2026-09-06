@@ -51,7 +51,7 @@ export const AuthPromptModal: React.FC<AuthPromptModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header Banner */}
-        <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-950 p-5 text-white relative">
+        <div className="bg-linear-to-br from-emerald-900 via-emerald-950 to-slate-950 p-5 text-white relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-full text-emerald-300/80 hover:text-white hover:bg-white/10 transition-colors"

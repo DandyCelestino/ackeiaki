@@ -132,7 +132,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
 
           {/* Header Icon */}
           <div className="text-center space-y-2 mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20 mb-1">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20 mb-1">
               {requiredRole === 'MASTER' ? (
                 <ShieldAlert className="w-7 h-7" />
               ) : (
@@ -220,7 +220,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2"
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span>Confirmar Código 2FA</span>
@@ -284,7 +284,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2"
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span>Autenticar com Confirmação em 2 Etapas</span>

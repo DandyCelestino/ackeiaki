@@ -264,7 +264,7 @@ function MarketplaceApp() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-tr from-emerald-800 to-green-600 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">
+                <div className="w-8 h-8 bg-linear-to-tr from-emerald-800 to-green-600 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">
                   {frontendConfig?.logoLetter || 'A'}
                 </div>
                 <h4 className="text-white font-black text-base">{frontendConfig?.siteTitle || 'Achei Aqui'}</h4>
@@ -275,7 +275,7 @@ function MarketplaceApp() {
               <div className="pt-2">
                 <button
                   onClick={openPlansModal}
-                  className="w-full py-2 px-3 bg-gradient-to-r from-amber-500/20 to-amber-600/30 border border-amber-500/40 rounded-xl text-amber-300 font-bold text-xs flex items-center justify-center space-x-1.5 hover:bg-amber-500/30 transition-all shadow-xs"
+                  className="w-full py-2 px-3 bg-linear-to-r from-amber-500/20 to-amber-600/30 border border-amber-500/40 rounded-xl text-amber-300 font-bold text-xs flex items-center justify-center space-x-1.5 hover:bg-amber-500/30 transition-all shadow-xs"
                 >
                   <Crown className="w-3.5 h-3.5 text-amber-400" />
                   <span>Conhecer Nossos Planos & Taxas</span>
@@ -284,7 +284,7 @@ function MarketplaceApp() {
             </div>
 
             <div>
-              <h5 className="text-white font-bold mb-3 uppercase text-[11px] tracking-wider text-emerald-200">
+              <h5 className="font-bold mb-3 uppercase text-[11px] tracking-wider text-emerald-200">
                 Departamentos & Categorias
               </h5>
               <ul className="space-y-1.5 text-[11px]">
@@ -306,7 +306,7 @@ function MarketplaceApp() {
             </div>
 
             <div>
-              <h5 className="text-white font-bold mb-3 uppercase text-[11px] tracking-wider text-emerald-200">
+              <h5 className="font-bold mb-3 uppercase text-[11px] tracking-wider text-emerald-200">
                 Acesso & Modalidades
               </h5>
               <ul className="space-y-2 text-[11px]">
@@ -351,7 +351,7 @@ function MarketplaceApp() {
             </div>
 
             <div>
-              <h5 className="text-white font-bold mb-3 uppercase text-[11px] tracking-wider text-emerald-200 flex items-center gap-1.5">
+              <h5 className="font-bold mb-3 uppercase text-[11px] tracking-wider text-emerald-200 flex items-center gap-1.5">
                 <Scale className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Normas & Transparência Legal</span>
               </h5>

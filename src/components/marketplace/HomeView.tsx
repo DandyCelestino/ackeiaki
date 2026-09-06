@@ -145,7 +145,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <div className="space-y-6 sm:space-y-10 pb-20">
       {/* 1. TOP ANNOUNCEMENT BAR (Serra da Mata Emerald Theme) */}
       {frontendConfig?.topAnnouncementActive && frontendConfig?.topAnnouncementText && (
-        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-green-900 text-white text-xs font-bold py-2 px-4 text-center shadow-inner flex items-center justify-center gap-2">
+        <div className="bg-linear-to-r from-emerald-900 via-emerald-800 to-green-900 text-white text-xs font-bold py-2 px-4 text-center shadow-inner flex items-center justify-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
           <span>{frontendConfig.topAnnouncementText}</span>
         </div>
@@ -154,7 +154,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* 2. HERO PROMOTIONAL BANNER */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2 sm:pt-4">
         <div
-          className={`relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-emerald-950/95 via-emerald-900/90 to-slate-950/90 text-white shadow-xl min-h-[220px] sm:min-h-[280px] flex items-center border border-emerald-800/40`}
+          className={`relative rounded-2xl sm:rounded-3xl overflow-hidden bg-linear-to-r from-emerald-950/95 via-emerald-900/90 to-slate-950/90 text-white shadow-xl min-h-[220px] sm:min-h-[280px] flex items-center border border-emerald-800/40`}
         >
           {/* Background Image Banner */}
           <div className="absolute inset-0 z-0">
@@ -166,7 +166,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               loading="eager"
             />
             {/* Dark & Emerald Overlay for contrast and readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-emerald-950/85 to-slate-950/60" />
+            <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-emerald-950/85 to-slate-950/60" />
           </div>
 
           <div className="relative z-10 p-5 sm:p-10 max-w-2xl space-y-3">

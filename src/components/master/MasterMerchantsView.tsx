@@ -561,7 +561,7 @@ export const MasterMerchantsView: React.FC<MasterMerchantsViewProps> = ({ onOpen
                   alt={viewingMerchant.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex items-end p-4">
+                <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 via-transparent to-transparent flex items-end p-4">
                   <div className="text-white">
                     <div className="font-bold text-base">{viewingMerchant.name}</div>
                     <div className="text-xs text-slate-200">{viewingMerchant.description}</div>

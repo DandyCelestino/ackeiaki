@@ -272,7 +272,7 @@ export const StoreDetailView: React.FC<StoreDetailViewProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         <div className="relative bg-white rounded-2xl sm:rounded-3xl border border-emerald-200/80 shadow-md overflow-hidden">
           {/* Cover Banner with Emerald Gradient */}
-          <div className="h-32 sm:h-48 bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 relative overflow-hidden">
+          <div className="h-32 sm:h-48 bg-linear-to-r from-emerald-950 via-emerald-900 to-slate-900 relative overflow-hidden">
             {merchant.banner ? (
               <img
                 src={merchant.banner}
@@ -283,7 +283,7 @@ export const StoreDetailView: React.FC<StoreDetailViewProps> = ({
             ) : (
               <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
               <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-emerald-900/90 backdrop-blur-md border border-emerald-400/40 text-emerald-200 text-[10px] sm:text-xs font-black uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />

@@ -37,7 +37,7 @@ export const NotificationAccountBanner: React.FC<NotificationAccountBannerProps>
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 p-3.5 sm:p-4 text-white shadow-md border border-emerald-500/30 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}
+      className={`relative overflow-hidden rounded-2xl bg-linear-to-r from-emerald-900 via-teal-900 to-emerald-950 p-3.5 sm:p-4 text-white shadow-md border border-emerald-500/30 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}
     >
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">

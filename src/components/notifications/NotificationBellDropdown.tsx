@@ -128,7 +128,7 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-emerald-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
-          <div className="p-3.5 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white flex items-center justify-between">
+          <div className="p-3.5 bg-linear-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Bell className="w-4 h-4 text-emerald-300" />
               <h4 className="font-bold text-xs sm:text-sm">Notificações no App</h4>

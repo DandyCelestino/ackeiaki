@@ -39,6 +39,8 @@ export const MasterSettingsView: React.FC = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetConfirmWord, setResetConfirmWord] = useState('');
   const [isSyncingWithSupabase, setIsSyncingWithSupabase] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,15 +75,27 @@ export const MasterSettingsView: React.FC = () => {
   const handleSupabaseSync = async () => {
     if (isSyncingWithSupabase) return;
     setIsSyncingWithSupabase(true);
+    setSyncStatus('saving');
+    setMaintenanceMessage(null);
     triggerToast('Sincronização com Supabase iniciada...');
     try {
       const result = await syncAppDataToSupabase();
       if (!result.ok) {
+        setSyncStatus('error');
+        setMaintenanceMessage(
+          `A manutenção automática identificou uma falha no salvamento: ${result.error || 'erro desconhecido'}`
+        );
         triggerToast(`Falha na sincronização: ${result.error || 'verifique o schema e as credenciais.'}`);
         return;
       }
+      setSyncStatus('success');
       const total = Object.values(result.synced).reduce((sum, count) => sum + count, 0);
       triggerToast(`${total} registros sincronizados com o Supabase.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'erro desconhecido';
+      setSyncStatus('error');
+      setMaintenanceMessage(`A manutenção automática identificou uma falha inesperada: ${message}`);
+      triggerToast('Salvamento não realizado. A manutenção automática foi acionada.');
     } finally {
       setIsSyncingWithSupabase(false);
     }
@@ -386,11 +400,42 @@ export const MasterSettingsView: React.FC = () => {
               onClick={handleSupabaseSync}
               disabled={isSyncingWithSupabase}
               title="Executa a sincronização oficial dos dados do Administrador Master com o Supabase"
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-wait text-white rounded-xl font-bold flex items-center justify-center space-x-2 transition-colors shadow-xs"
+              className={`w-full py-2.5 px-4 rounded-xl font-bold flex items-center justify-center space-x-2 transition-colors shadow-xs text-white disabled:cursor-wait ${
+                syncStatus === 'success'
+                  ? 'bg-slate-400 hover:bg-slate-500'
+                  : syncStatus === 'error'
+                  ? 'bg-rose-600 hover:bg-rose-700'
+                  : isSyncingWithSupabase
+                  ? 'bg-emerald-300'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
             >
               <RefreshCw className={`w-4 h-4 ${isSyncingWithSupabase ? 'animate-spin' : ''}`} />
-              <span>{isSyncingWithSupabase ? 'Sincronização em andamento...' : 'Sincronização oficial Master'}</span>
+              <span>
+                {isSyncingWithSupabase
+                  ? 'Salvando no banco...'
+                  : syncStatus === 'success'
+                  ? 'Salvamento confirmado'
+                  : syncStatus === 'error'
+                  ? 'Salvamento não realizado'
+                  : 'Sincronização oficial Master'}
+              </span>
             </button>
+
+            {maintenanceMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 space-y-2">
+                <p className="font-bold">Manutenção automática acionada</p>
+                <p>{maintenanceMessage}</p>
+                <button
+                  type="button"
+                  onClick={handleSupabaseSync}
+                  disabled={isSyncingWithSupabase}
+                  className="w-full py-2 px-3 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white rounded-lg font-bold transition-colors"
+                >
+                  Analisar novamente e tentar salvar
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bg-rose-50/50 p-6 rounded-2xl border border-rose-200 shadow-xs space-y-4 text-xs">

@@ -669,7 +669,7 @@ export const MasterAdSpacesView: React.FC = () => {
                       alt={slide.title}
                       className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent p-1.5 flex flex-col justify-end">
                       <span className="text-[9px] font-bold text-amber-300 line-clamp-1">
                         Slide {sIdx + 1}: {slide.badge || 'Banner'}
                       </span>

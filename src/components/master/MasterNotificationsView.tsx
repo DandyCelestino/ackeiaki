@@ -175,7 +175,7 @@ export const MasterNotificationsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner / Canal Status */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 p-6 rounded-3xl text-white shadow-md border border-emerald-500/20">
+      <div className="bg-linear-to-r from-emerald-950 via-slate-900 to-teal-950 p-6 rounded-3xl text-white shadow-md border border-emerald-500/20">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
@@ -445,7 +445,7 @@ export const MasterNotificationsView: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="relative flex-1 min-w-[160px]">
+              <div className="relative flex-1 min-w-40">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
@@ -483,7 +483,7 @@ export const MasterNotificationsView: React.FC = () => {
           </div>
 
           {/* Lista de Registros e Auditoria */}
-          <div className="divide-y divide-slate-100 overflow-y-auto max-h-[560px] flex-1">
+          <div className="divide-y divide-slate-100 overflow-y-auto max-h-140 flex-1">
             {filteredLogs.length === 0 ? (
               <div className="p-12 text-center text-slate-400 space-y-2">
                 <Bell className="w-8 h-8 mx-auto opacity-40" />

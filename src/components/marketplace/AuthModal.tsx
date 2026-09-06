@@ -545,7 +545,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {is2FAStep && (
             <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
               <div className="text-center space-y-2 py-2">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
                   <ShieldCheck className="w-7 h-7" />
                 </div>
                 <h4 className="text-lg font-extrabold text-slate-900 tracking-tight">
@@ -601,7 +601,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="pt-2 space-y-2">
                   <button
                     type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-600/20 hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-3 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-600/20 hover:shadow-lg transition-all flex items-center justify-center space-x-2"
                   >
                     <ShieldCheck className="w-4 h-4" />
                     <span>Confirmar Identidade e Acessar</span>
@@ -965,7 +965,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Modalidade / Plano de Usuário (Grátis, Bronze, Prata, Ouro, Premium) */}
-              <div className="p-3.5 bg-gradient-to-br from-amber-50/70 to-slate-50 border border-amber-200/80 rounded-xl space-y-2.5">
+              <div className="p-3.5 bg-linear-to-br from-amber-50/70 to-slate-50 border border-amber-200/80 rounded-xl space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1.5 text-xs font-bold text-amber-950">
                     <Crown className="w-4 h-4 text-amber-600" />
@@ -1471,7 +1471,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Modalidade / Plano Escolhido do Vendedor (Grátis, Bronze, Prata, Ouro, Premium) */}
-              <div className="p-4 bg-gradient-to-br from-amber-50/80 via-white to-slate-50 border border-amber-200 rounded-xl space-y-3 shadow-xs">
+              <div className="p-4 bg-linear-to-br from-amber-50/80 via-white to-slate-50 border border-amber-200 rounded-xl space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1.5 text-xs font-bold text-amber-950">
                     <Crown className="w-4 h-4 text-amber-600" />
@@ -1493,7 +1493,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onClick={() => setMerchantTier(t)}
                         className={`p-2.5 rounded-xl text-left border transition-all relative flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-white border-amber-700 shadow-md ring-2 ring-amber-400'
+                            ? 'bg-linear-to-b from-amber-500 to-amber-600 text-white border-amber-700 shadow-md ring-2 ring-amber-400'
                             : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-amber-50/30'
                         }`}
                       >

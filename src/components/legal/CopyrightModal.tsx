@@ -24,7 +24,7 @@ export const CopyrightModal: React.FC<CopyrightModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white p-5 sm:p-6 flex items-center justify-between border-b border-emerald-800 shrink-0">
+        <div className="bg-linear-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white p-5 sm:p-6 flex items-center justify-between border-b border-emerald-800 shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shrink-0">
               <Award className="w-6 h-6" />
@@ -155,7 +155,7 @@ export const CopyrightModal: React.FC<CopyrightModalProps> = ({
           </div>
 
           {/* Atalhos Rápidos Abaixo dos Direitos Autorais */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white space-y-3">
+          <div className="p-4 rounded-2xl bg-linear-to-r from-slate-900 via-emerald-950 to-slate-900 text-white space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">
                 Atalhos Rápidos • Normas, Manuais & Transparência

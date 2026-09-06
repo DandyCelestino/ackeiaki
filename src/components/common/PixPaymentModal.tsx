@@ -116,9 +116,9 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[94vh]">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-amber-950 text-white p-5 sm:p-6 flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div className="bg-linear-to-r from-emerald-950 via-slate-900 to-amber-950 text-white p-5 sm:p-6 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-amber-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-md shrink-0">
               <QrCode className="w-6 h-6" />
             </div>
             <div>
@@ -155,7 +155,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
           </div>
 
           {/* Amount and Beneficiary Highlight */}
-          <div className="p-4 bg-gradient-to-br from-slate-900 to-emerald-950 text-white rounded-2xl border border-emerald-500/30 shadow-md space-y-3">
+          <div className="p-4 bg-linear-to-br from-slate-900 to-emerald-950 text-white rounded-2xl border border-emerald-500/30 shadow-md space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-300 font-semibold uppercase">Valor a Pagar:</span>
               <span className="text-2xl font-black text-amber-400">
@@ -310,7 +310,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
             type="button"
             disabled={paymentStatus !== 'PENDING'}
             onClick={handleConfirmPaid}
-            className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-75"
+            className="w-full sm:w-auto px-6 py-2.5 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-75"
           >
             {paymentStatus === 'PROCESSING' ? (
               <>

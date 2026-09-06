@@ -76,9 +76,9 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white p-4 sm:p-6 flex items-center justify-between border-b border-emerald-800 shrink-0">
+        <div className="bg-linear-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white p-4 sm:p-6 flex items-center justify-between border-b border-emerald-800 shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-amber-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-md shrink-0">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>

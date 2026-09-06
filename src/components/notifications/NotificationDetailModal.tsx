@@ -129,7 +129,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
         aria-modal="true"
       >
         {/* Header Color Strip */}
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 p-4 sm:p-5 text-white relative">
+        <div className="bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 p-4 sm:p-5 text-white relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"

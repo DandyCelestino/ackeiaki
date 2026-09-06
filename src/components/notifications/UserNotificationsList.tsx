@@ -78,7 +78,7 @@ export const UserNotificationsList: React.FC = () => {
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
       {/* Header Bar */}
-      <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white flex flex-wrap items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 bg-linear-to-r from-slate-900 via-emerald-950 to-slate-900 text-white flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center">

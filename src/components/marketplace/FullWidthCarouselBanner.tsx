@@ -128,7 +128,7 @@ export const FullWidthCarouselBanner: React.FC<FullWidthCarouselBannerProps> = (
               loading="lazy"
             />
             {/* Gradients for high text contrast on mobile and desktop */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40 md:bg-gradient-to-r md:from-slate-950 md:via-slate-950/90 md:to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/80 to-slate-950/40 md:bg-linear-to-r md:from-slate-950 md:via-slate-950/90 md:to-transparent" />
           </div>
         ))}
 
@@ -168,7 +168,7 @@ export const FullWidthCarouselBanner: React.FC<FullWidthCarouselBannerProps> = (
             <button
               id={`btn-banner-action-${banner.id}-${currentSlideIndex}`}
               onClick={handleActionClick}
-              className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/30 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/30 active:scale-95 transition-all"
             >
               <span>{currentSlide.actionText || 'Ver Ofertas Exclusivas'}</span>
               <ExternalLink className="w-4 h-4" />

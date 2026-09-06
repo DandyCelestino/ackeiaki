@@ -50,7 +50,7 @@ export const MobileCategoryDrawer: React.FC<MobileCategoryDrawerProps> = ({
       {/* Slide-over Drawer on the Left */}
       <div className="relative w-[85%] max-w-xs bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-left duration-250">
         {/* Drawer Header Verde Parque da Serra */}
-        <div className="p-4 bg-gradient-to-r from-emerald-900 to-emerald-800 text-white flex items-center justify-between">
+        <div className="p-4 bg-linear-to-r from-emerald-900 to-emerald-800 text-white flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center font-black text-white text-base">
               A

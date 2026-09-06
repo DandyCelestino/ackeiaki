@@ -122,9 +122,9 @@ export const MembershipPlansModal: React.FC<MembershipPlansModalProps> = ({
       <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
         <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-purple-950 text-white p-4 sm:p-6 flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div className="bg-linear-to-r from-emerald-950 via-slate-900 to-purple-950 text-white p-4 sm:p-6 flex items-center justify-between border-b border-slate-800 shrink-0">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-500 flex items-center justify-center text-white font-black shadow-md shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-amber-500 to-purple-500 flex items-center justify-center text-white font-black shadow-md shrink-0">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
@@ -247,7 +247,7 @@ export const MembershipPlansModal: React.FC<MembershipPlansModalProps> = ({
                         }`}
                       >
                         {isPremium && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-linear-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
                             Recomendado
                           </div>
                         )}
@@ -348,7 +348,7 @@ export const MembershipPlansModal: React.FC<MembershipPlansModalProps> = ({
               /* TAB: PLANOS DE BANNERS DE DESTAQUE */
               <div className="space-y-6">
                 {/* Banner Header Info Box */}
-                <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-5 rounded-2xl border border-purple-800 space-y-3">
+                <div className="bg-linear-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-5 rounded-2xl border border-purple-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <ImageIcon className="w-5 h-5 text-purple-400" />

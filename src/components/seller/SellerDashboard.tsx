@@ -632,7 +632,7 @@ export const SellerDashboard: React.FC = () => {
       {/* SELLER MAIN CONTENT AREA */}
       <main className="flex-1 p-4 sm:p-8 overflow-y-auto max-h-screen space-y-6">
         {/* CABEÇALHO DO VENDEDOR - MODALIDADE ESCOLHIDA */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white p-4 sm:p-6 rounded-2xl border border-amber-500/30 shadow-lg relative overflow-hidden">
+        <div className="bg-linear-to-r from-slate-900 via-slate-800 to-amber-950 text-white p-4 sm:p-6 rounded-2xl border border-amber-500/30 shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
           
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -641,7 +641,7 @@ export const SellerDashboard: React.FC = () => {
                 <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
                   Modalidade do Vendedor / Prestador
                 </span>
-                <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs flex items-center gap-1.5 border border-amber-400">
+                <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase bg-linear-to-r from-amber-500 to-amber-600 text-white shadow-xs flex items-center gap-1.5 border border-amber-400">
                   <Crown className="w-3.5 h-3.5" />
                   {MEMBERSHIP_PLANS[currentStore.membershipTier || 'GRATIS'].title}
                 </span>
@@ -1218,7 +1218,7 @@ export const SellerDashboard: React.FC = () => {
                         </div>
                       ) : (
                         <div className="flex-1 min-w-[280px] space-y-1.5">
-                          <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-xs space-y-2">
+                          <div className="p-3 bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-xs space-y-2">
                             <div className="flex items-start gap-2 text-amber-950">
                               <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                               <div className="space-y-1">
@@ -1244,7 +1244,7 @@ export const SellerDashboard: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setPixCommissionModalOrder(ord)}
-                                  className="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-lg text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                                  className="px-3 py-1.5 bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-lg text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                                 >
                                   <QrCode className="w-3.5 h-3.5" />
                                   <span>Pagar Comissão via PIX (R$ {(ord.commissionAmount ?? 12.00).toFixed(2).replace('.', ',')})</span>

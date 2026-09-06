@@ -204,7 +204,7 @@ export const SubOrderChatModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[90vh] max-h-[750px]">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[90vh] max-h-187.5">
         {/* HEADER */}
         <div className="p-4 bg-slate-900 text-white border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3 min-w-0">
@@ -406,7 +406,7 @@ export const SubOrderChatModal: React.FC = () => {
                         : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'
                     }`}
                   >
-                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
                       {msg.message}
                     </p>
 

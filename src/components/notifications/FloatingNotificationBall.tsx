@@ -209,7 +209,7 @@ export const FloatingNotificationBall: React.FC = () => {
   return (
     <aside
       aria-label="Balões Flutuantes de Notificações"
-      className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[9999] flex flex-col items-end pointer-events-none"
+      className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-9999 flex flex-col items-end pointer-events-none"
     >
       {/* PILHA DE BALÕES FLUTUANTES (PERSISTENTES ATÉ O 'X') */}
       {isExpanded && (

@@ -354,7 +354,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 flex flex-col justify-between text-slate-100 font-sans selection:bg-emerald-600 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-emerald-950 to-slate-900 flex flex-col justify-between text-slate-100 font-sans selection:bg-emerald-600 selection:text-white relative overflow-x-hidden">
       {/* Background Decor Ambient Glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -362,7 +362,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
       {/* Top Header Bar */}
       <header className="px-4 sm:px-8 py-4 border-b border-emerald-900/40 bg-slate-950/60 backdrop-blur-md flex items-center justify-between z-10">
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-700 to-green-500 flex items-center justify-center font-black text-white text-lg shadow-md shadow-emerald-900/30">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-tr from-emerald-700 to-green-500 flex items-center justify-center font-black text-white text-lg shadow-md shadow-emerald-900/30">
             {frontendConfig?.logoLetter || 'A'}
           </div>
           <div>
@@ -390,7 +390,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
           
           {/* Card Top Branding & Purpose */}
           <div className="text-center space-y-2 mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-800 via-emerald-700 to-green-600 text-white shadow-lg shadow-emerald-900/40 mb-1 border border-emerald-600/30">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-linear-to-tr from-emerald-800 via-emerald-700 to-green-600 text-white shadow-lg shadow-emerald-900/40 mb-1 border border-emerald-600/30">
               <Lock className="w-7 h-7 text-emerald-100" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -558,7 +558,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-[0.99] text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3.5 px-6 bg-linear-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-[0.99] text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-900/40 transition-all flex items-center justify-center space-x-2"
               >
                 <span>ENTRAR NA PLATAFORMA</span>
                 <ArrowRight className="w-4 h-4" />
@@ -714,7 +714,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-3.5 px-6 bg-linear-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
                   >
                     <span>ENVIAR CÓDIGO DE RECUPERAÇÃO</span>
                     <Send className="w-4 h-4" />
@@ -934,7 +934,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3.5 px-6 bg-linear-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
               >
                 <span>CRIAR CONTA GRÁTIS</span>
                 <User className="w-4 h-4" />
@@ -1118,7 +1118,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3.5 px-6 bg-linear-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
               >
                 <span>FINALIZAR CREDENCIAMENTO</span>
                 <Store className="w-4 h-4" />

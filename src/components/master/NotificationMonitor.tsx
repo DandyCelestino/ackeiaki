@@ -255,7 +255,7 @@ export const NotificationMonitor: React.FC = () => {
           </div>
 
           {/* Lista de Registros */}
-          <div className="divide-y divide-slate-100 overflow-y-auto max-h-[520px] flex-1">
+          <div className="divide-y divide-slate-100 overflow-y-auto max-h-130 flex-1">
             {filteredLogs.length === 0 ? (
               <div className="p-12 text-center text-slate-400">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-40" />
