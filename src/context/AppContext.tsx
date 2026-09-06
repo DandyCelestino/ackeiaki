@@ -1804,6 +1804,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       idDocument: customerData.idDocument,
       references: customerData.references,
       addresses: customerData.addresses,
+      avatar: customerData.avatar,
       isEmailVerified: true,
       twoFactorEnabled: false,
       createdAt: new Date().toISOString()
@@ -1881,6 +1882,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       email: ownerData.email || newMerchant.email,
       phone: newMerchant.phone,
       cpf: newMerchant.cnpjOrCpf,
+      avatar: ownerData.avatar,
       idDocument: newMerchant.idDocument,
       references: newMerchant.references,
       role: 'VENDEDOR',

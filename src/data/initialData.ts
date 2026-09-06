@@ -43,7 +43,6 @@ export const INITIAL_USERS: User[] = [
     isEmailVerified: true,
     password: '123456',
     twoFactorEnabled: false,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     addresses: [
       {
         id: 'addr-1',
@@ -116,7 +115,6 @@ export const INITIAL_USERS: User[] = [
     neighborhood: 'Centro',
     merchantId: 'store-1',
     isEmailVerified: true,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-02-01'
   },
   {
@@ -132,7 +130,6 @@ export const INITIAL_USERS: User[] = [
     neighborhood: 'Centro',
     merchantId: 'store-2',
     isEmailVerified: true,
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-02-10'
   },
   {
@@ -146,7 +143,6 @@ export const INITIAL_USERS: User[] = [
     isEmailVerified: true,
     needsPasswordChange: false,
     twoFactorEnabled: true,
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-01-01'
   },
   {
@@ -159,7 +155,6 @@ export const INITIAL_USERS: User[] = [
     city: 'Cachoeiras de Macacu, RJ',
     isEmailVerified: true,
     twoFactorEnabled: true,
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     createdAt: '2025-12-01'
   },
   {
@@ -175,7 +170,6 @@ export const INITIAL_USERS: User[] = [
     cpf: '321.654.987-11',
     isEmailVerified: true,
     status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-02-14'
   },
   {
@@ -190,7 +184,6 @@ export const INITIAL_USERS: User[] = [
     isEmailVerified: false,
     status: 'suspended',
     statusReason: 'Suspensão temporária por 2 contestações consecutivas de entrega',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-02-20'
   },
   {
@@ -205,7 +198,6 @@ export const INITIAL_USERS: User[] = [
     merchantId: 'store-4',
     isEmailVerified: true,
     status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-01-20'
   },
   {
@@ -222,7 +214,6 @@ export const INITIAL_USERS: User[] = [
     merchantId: 'store-marido-1',
     isEmailVerified: true,
     status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-01-15'
   }
 ];

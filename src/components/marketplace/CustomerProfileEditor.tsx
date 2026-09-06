@@ -55,15 +55,6 @@ export const MACACU_NEIGHBORHOODS = [
   'Outro Bairro'
 ];
 
-const PREDEFINED_AVATARS = [
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80'
-];
-
 const STYLE_OPTIONS = [
   'Casual',
   'Casual Elegante',
@@ -234,6 +225,11 @@ export const CustomerProfileEditor: React.FC = () => {
 
     if (!name.trim()) {
       alert('Por favor, informe seu nome completo.');
+      return;
+    }
+
+    if (!avatar.trim()) {
+      alert('A foto de perfil é obrigatória. Envie uma foto do seu celular ou computador.');
       return;
     }
 
@@ -555,30 +551,9 @@ export const CustomerProfileEditor: React.FC = () => {
                 onChange={(img) => setAvatar(img as string)}
                 label="Sua Foto de Perfil (Computador ou Câmera do Smartphone)"
                 helperText="Envie uma foto do seu computador ou tire uma selfie com a câmera do celular"
+                enableUrlPaste={false}
+                required
               />
-            </div>
-
-            <div className="pt-3 border-t border-slate-200">
-              <label className="block text-xs font-bold text-slate-700 mb-2">Ou escolha um dos avatares rápidos do guia:</label>
-              <div className="flex flex-wrap items-center gap-2.5">
-                {PREDEFINED_AVATARS.map((imgUrl, i) => (
-                  <button
-                    type="button"
-                    key={i}
-                    onClick={() => setAvatar(imgUrl)}
-                    className={`relative rounded-full overflow-hidden border-2 transition-all ${
-                      avatar === imgUrl ? 'border-blue-600 ring-2 ring-blue-600/30 scale-105' : 'border-transparent hover:opacity-80'
-                    }`}
-                  >
-                    <img src={imgUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-10 h-10 object-cover" />
-                    {avatar === imgUrl && (
-                      <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center text-white">
-                        <Check className="w-4 h-4" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
 

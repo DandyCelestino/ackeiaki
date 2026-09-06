@@ -33,12 +33,14 @@ O resultado esperado e uma linha com os quatro nomes preenchidos.
 
 ## Estado atual
 
-O frontend usa `localStorage` como fonte principal para usuarios, lojas, produtos e pedidos. O Supabase esta preparado para persistencia de notificacoes, mas ainda nao substitui automaticamente esses dados locais. Para migrar o sistema inteiro, e necessario criar uma camada de repositorio que leia e grave essas entidades no banco, com autenticacao Supabase e politicas RLS por loja.
+O frontend usa `localStorage` como fonte principal para usuarios, lojas, produtos e pedidos. O botao de sincronizacao do painel Master envia um snapshot sob demanda, mas nao deve usar a chave publica do navegador para gravar diretamente nas tabelas de dominio.
 
-O botao de sincronizacao do painel Master faz a verificacao do schema e tenta enviar o snapshot atual. Em producao, a escrita das tabelas de dominio deve ser movida para uma Edge Function autenticada com `service_role`; a chave publica do navegador deve permanecer somente com permissao de leitura/catalogo.
+Em producao, a escrita deve ser executada por uma Edge Function ou backend autenticado com `service_role`. A chave publica configurada em `VITE_SUPABASE_PUBLISHABLE_KEY` deve permanecer no frontend apenas para leitura permitida pelo RLS.
 
-## Diagnostico observado
+## Diagnostico verificado em 2026-09-05
 
-A URL configurada `https://xootmi7yjqr7.supabase.co` nao respondeu por DNS no ambiente local. Confirme no Dashboard se o projeto ainda existe e copie novamente a URL em **Project Settings > API**. Depois reinicie `npm run dev`.
+A URL e a chave publica configuradas em `.env.local` respondem corretamente. A API retornou `PGRST205` para `public.app_settings`, indicando que o schema da aplicacao ainda nao foi aplicado neste projeto. Execute `supabase_app_schema.sql` no SQL Editor e depois `supabase_migration_2026-09-04.sql`.
+
+Depois disso, o botao **Sincronizacao oficial Master** ainda retornara bloqueio de escrita se for executado diretamente pelo navegador. Para persistencia completa, publique uma Edge Function autenticada e mova a chamada de `syncAppDataToSupabase` para essa funcao.
 
 O login Master atual ainda usa `VITE_MASTER_PASSWORD` no frontend. Essa configuracao e apenas temporaria para o prototipo: qualquer segredo em `VITE_*` fica visivel no navegador. Antes de producao, migre esse login para Supabase Auth ou para uma Edge Function e remova a senha do `.env.local` publico.

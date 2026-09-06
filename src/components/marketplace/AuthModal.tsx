@@ -272,8 +272,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         idDocument: customerIdDocument,
         references,
         city: currentCity,
-        membershipTier: customerTier
-        ,avatar: customerAvatar
+        membershipTier: customerTier,
+        avatar: customerAvatar
       },
       customerPassword,
       customerTier
@@ -787,6 +787,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 />
               </div>
 
+              <ImageUploadDropzone
+                value={customerAvatar}
+                onChange={(img) => setCustomerAvatar(img as string)}
+                aspectRatio="circle"
+                label="Foto de perfil *"
+                helperText="Envie uma foto pelo celular ou computador. A foto é obrigatória para concluir o cadastro."
+                enableCamera
+                enableUrlPaste={false}
+                required
+              />
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -1120,6 +1131,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   />
                 </div>
               </div>
+
+              <ImageUploadDropzone
+                value={merchantAvatar}
+                onChange={(img) => setMerchantAvatar(img as string)}
+                aspectRatio="circle"
+                label="Foto do responsável / profissional *"
+                helperText="Envie uma foto pelo celular ou computador. A foto é obrigatória para credenciar a conta."
+                enableCamera
+                enableUrlPaste={false}
+                required
+              />
 
               {/* Contatos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
