@@ -1388,6 +1388,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           senderRole: data.senderRole,
           amount: linkedOrder?.totalAmount,
           attachmentUrl: data.attachmentUrl,
+          fileName: data.attachmentName,
           transactionType: 'PIX',
           status: 'ENVIADO',
           createdAt: newMsg.createdAt
@@ -3104,7 +3105,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       products,
       services,
       orders,
-      auditLogs
+      auditLogs,
+      paymentReceipts
     };
     return JSON.stringify(snapshot, null, 2);
   };
@@ -3141,6 +3143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setServices(INITIAL_SERVICES);
     setOrders(INITIAL_ORDERS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
+    setPaymentReceipts([]);
     setSystemSettings(INITIAL_SYSTEM_SETTINGS);
     setInterCategoryBanners(INITIAL_INTER_CATEGORY_BANNERS);
     setAdSpaces(INITIAL_AD_SPACES);

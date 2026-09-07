@@ -163,7 +163,8 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
       recipientName: confirmedBooking.merchantName,
       recipientRole: 'VENDEDOR',
       message: `PIX realizado para o agendamento de ${selectedDate} às ${selectedTime}. Comprovante anexado para conferência do prestador.`,
-      attachmentUrl: receiptData?.dataUrl
+      attachmentUrl: receiptData?.dataUrl,
+      attachmentName: receiptData?.fileName
     });
 
     sendInAppNotification({

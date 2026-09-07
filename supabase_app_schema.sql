@@ -101,6 +101,27 @@ CREATE TABLE IF NOT EXISTS public.app_audit_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.app_payment_receipts (
+    id TEXT PRIMARY KEY,
+    order_id TEXT,
+    subpedido_id TEXT NOT NULL,
+    order_code TEXT,
+    customer_id TEXT,
+    customer_name TEXT,
+    merchant_id TEXT,
+    merchant_name TEXT,
+    sender_id TEXT NOT NULL,
+    sender_name TEXT NOT NULL,
+    sender_role TEXT NOT NULL,
+    amount NUMERIC(12, 2),
+    attachment_url TEXT NOT NULL,
+    file_name TEXT,
+    transaction_type TEXT NOT NULL DEFAULT 'PIX',
+    status TEXT NOT NULL DEFAULT 'ENVIADO',
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.app_settings (
     id TEXT PRIMARY KEY DEFAULT 'global',
     data JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -118,6 +139,9 @@ CREATE INDEX IF NOT EXISTS idx_app_orders_merchant ON public.app_orders(merchant
 CREATE INDEX IF NOT EXISTS idx_app_orders_status ON public.app_orders(status);
 CREATE INDEX IF NOT EXISTS idx_app_notifications_recipient ON public.app_notifications(recipient_user_id);
 CREATE INDEX IF NOT EXISTS idx_app_audit_logs_entity ON public.app_audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_app_payment_receipts_order ON public.app_payment_receipts(order_id, subpedido_id);
+CREATE INDEX IF NOT EXISTS idx_app_payment_receipts_customer ON public.app_payment_receipts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_app_payment_receipts_merchant ON public.app_payment_receipts(merchant_id);
 
 CREATE OR REPLACE FUNCTION public.app_set_updated_at()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -146,6 +170,7 @@ ALTER TABLE public.app_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_payment_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 
 -- Politicas iniciais: leitura publica apenas do catalogo aprovado/ativo.

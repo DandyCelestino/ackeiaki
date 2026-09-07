@@ -80,6 +80,25 @@ Deno.serve(async (request) => {
       id: log.id, user_id: log.userId, user_role: log.userRole || null, action: log.action,
       entity_type: log.entityType || null, entity_id: log.entityId || null, severity: log.severity || null, data: log
     })));
+    await upsert('app_payment_receipts', (input.paymentReceipts || []).map((receipt: Record<string, unknown>) => ({
+      id: receipt.id,
+      order_id: receipt.orderId || null,
+      subpedido_id: receipt.subpedidoId,
+      order_code: receipt.orderCode || null,
+      customer_id: receipt.customerId || null,
+      customer_name: receipt.customerName || null,
+      merchant_id: receipt.merchantId || null,
+      merchant_name: receipt.merchantName || null,
+      sender_id: receipt.senderId,
+      sender_name: receipt.senderName,
+      sender_role: receipt.senderRole,
+      amount: receipt.amount || null,
+      attachment_url: receipt.attachmentUrl,
+      file_name: receipt.fileName || null,
+      transaction_type: receipt.transactionType || 'PIX',
+      status: receipt.status || 'ENVIADO',
+      data: receipt
+    })));
     if (input.systemSettings) await upsert('app_settings', [{ id: 'global', data: input.systemSettings }]);
     return json({ ok: true, synced });
   } catch (error) {

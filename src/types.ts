@@ -1125,6 +1125,7 @@ export interface SubOrderMessage {
   recipientRole?: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'ALL';
   message: string; // Texto da mensagem
   attachmentUrl?: string; // URL de foto/comprovante/anexo
+  attachmentName?: string; // Nome original do arquivo anexado
   readBy: string[]; // Lista de IDs de usuários que já visualizaram
   isInternalNote?: boolean; // Nota interna visível apenas para Lojista e Master
   systemEventType?: 'ORDER_CREATED' | 'STOCK_CONFIRMED' | 'STOCK_REJECTED' | 'STATUS_CHANGED' | 'COMMISSION_PAID' | 'COMMISSION_CONFIRMED' | 'PICKUP_VALIDATED' | string;
