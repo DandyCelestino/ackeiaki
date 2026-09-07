@@ -52,6 +52,7 @@ import { AppointmentResponseModal } from '../services/AppointmentResponseModal';
 import { ImageUploadDropzone } from '../common/ImageUploadDropzone';
 import { MEMBERSHIP_PLANS } from '../../data/membershipPlansData';
 import { PixPaymentModal } from '../common/PixPaymentModal';
+import { OrderTransparencyModal } from '../common/OrderTransparencyModal';
 
 export const SellerDashboard: React.FC = () => {
   const {
@@ -77,7 +78,9 @@ export const SellerDashboard: React.FC = () => {
     openPlansModal,
     payOrderCommissionByMerchant,
     openSubOrderChat,
-    getUnreadSubOrderMessagesCount
+    getUnreadSubOrderMessagesCount,
+    paymentReceipts,
+    auditLogs
   } = useApp();
 
   // Find seller's active merchant store strictly matching the logged in user
@@ -92,6 +95,7 @@ export const SellerDashboard: React.FC = () => {
   const [reviewingOrderForCustomer, setReviewingOrderForCustomer] = useState<Order | null>(null);
   const [respondingAppointment, setRespondingAppointment] = useState<Order | null>(null);
   const [pixCommissionModalOrder, setPixCommissionModalOrder] = useState<Order | null>(null);
+  const [transparencyOrder, setTransparencyOrder] = useState<Order | null>(null);
 
   // Filter store-specific data
   const storeProducts = currentStore ? products.filter((p) => p.merchantId === currentStore.id) : [];
@@ -1203,6 +1207,14 @@ export const SellerDashboard: React.FC = () => {
                         Total: R$ {(ord.totalAmount ?? 0).toFixed(2).replace('.', ',')}
                       </span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setTransparencyOrder(ord)}
+                      className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[11px] font-bold"
+                    >
+                      Ver histórico completo, pagamento e auditoria
+                    </button>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
                       {ord.buyerDataUnlocked ? (
@@ -2556,6 +2568,13 @@ export const SellerDashboard: React.FC = () => {
           }}
         />
       )}
+
+      <OrderTransparencyModal
+        order={transparencyOrder}
+        receipts={paymentReceipts}
+        auditLogs={auditLogs}
+        onClose={() => setTransparencyOrder(null)}
+      />
     </div>
   );
 };

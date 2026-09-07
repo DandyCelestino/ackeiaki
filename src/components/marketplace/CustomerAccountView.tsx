@@ -32,6 +32,7 @@ import { CustomerReviewModal } from '../reviews/CustomerReviewModal';
 import { CustomerReputationBadge } from '../reviews/CustomerReputationBadge';
 import { NotificationAccountBanner } from '../notifications/NotificationAccountBanner';
 import { UserNotificationsList } from '../notifications/UserNotificationsList';
+import { OrderTransparencyModal } from '../common/OrderTransparencyModal';
 
 interface CustomerAccountViewProps {
   onSelectProduct: (p: Product) => void;
@@ -59,11 +60,14 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
     openPolicyModal,
     openSubOrderChat,
     getUnreadSubOrderMessagesCount,
-    getUnreadNotificationsCount
+    getUnreadNotificationsCount,
+    paymentReceipts,
+    auditLogs
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'orders' | 'pickups' | 'trials' | 'services' | 'favorites' | 'reputation'>('profile');
   const [reviewingOrder, setReviewingOrder] = useState<Order | null>(null);
+  const [transparencyOrder, setTransparencyOrder] = useState<Order | null>(null);
 
   const unreadNotifCount = getUnreadNotificationsCount ? getUnreadNotificationsCount(currentUser) : 0;
 
@@ -88,7 +92,11 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
   }
 
   // Filter orders
-  const userOrders = orders; // Show all connected orders for smooth test experience
+  const userOrders = orders.filter((order) =>
+    order.userId === currentUser.id ||
+    order.customerId === currentUser.id ||
+    order.customerEmail?.toLowerCase() === currentUser.email?.toLowerCase()
+  );
   const pickupOrders = userOrders.filter((o) => o.modality === 'RETIRADA');
   const trialOrders = userOrders.filter((o) => o.modality === 'EXPERIMENTAÇÃO');
   const serviceBookings = userOrders.filter((o) => o.modality === 'AGENDAMENTO');
@@ -349,6 +357,14 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                       ● {order.status}
                     </span>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setTransparencyOrder(order)}
+                    className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[11px] font-bold"
+                  >
+                    Ver histórico completo
+                  </button>
                 </div>
 
                 {/* Items in Order */}
@@ -975,6 +991,12 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
           onOpenPolicy={() => openPolicyModal('customer')}
         />
       )}
+      <OrderTransparencyModal
+        order={transparencyOrder}
+        receipts={paymentReceipts}
+        auditLogs={auditLogs}
+        onClose={() => setTransparencyOrder(null)}
+      />
     </div>
   );
 };

@@ -55,6 +55,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   } = useApp();
 
   const currentMerchant = merchants.find((m) => m.id === product?.merchantId);
+  const isServiceProduct = ['SERVICO', 'INSTALACAO', 'MANUTENCAO'].includes(product?.itemType || '');
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariations, setSelectedVariations] = useState<{ [key: string]: string }>({});
@@ -504,28 +505,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                 )}
 
-                {/* Available Modalities Badges */}
+                {/* Service cards expose only the appointment flow. */}
                 <div className="mt-5 p-3.5 rounded-xl bg-blue-50/50 border border-blue-100 space-y-2">
                   <p className="text-[11px] font-bold uppercase text-blue-900 tracking-wider">
-                    Opções de Entrega & Retirada:
+                    {isServiceProduct ? 'Agenda de horários do prestador:' : 'Opções de Entrega & Retirada:'}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    {product.availableModalities.includes('DELIVERY') && (
+                    {!isServiceProduct && product.availableModalities.includes('DELIVERY') && (
                       <div className="flex items-center space-x-2 text-slate-700">
                         <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span>Entrega Expressa por Motoboy</span>
                       </div>
                     )}
-                    {product.availableModalities.includes('RETIRADA') && (
+                    {!isServiceProduct && product.availableModalities.includes('RETIRADA') && (
                       <div className="flex items-center space-x-2 text-slate-700">
                         <Package className="w-4 h-4 text-blue-600 shrink-0" />
                         <span>Retirar na Loja (Código Instantâneo)</span>
                       </div>
                     )}
-                    {product.availableModalities.includes('EXPERIMENTAÇÃO') && (
+                    {!isServiceProduct && product.availableModalities.includes('EXPERIMENTAÇÃO') && (
                       <div className="flex items-center space-x-2 text-slate-700 sm:col-span-2">
                         <Shirt className="w-4 h-4 text-purple-600 shrink-0" />
                         <span>Experimentar no Provador (Sem custo)</span>
+                      </div>
+                    )}
+                    {isServiceProduct && (
+                      <div className="flex items-center space-x-2 text-slate-700 sm:col-span-2">
+                        <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Agendamento com horário livre definido pelo prestador</span>
                       </div>
                     )}
                   </div>
@@ -613,6 +620,40 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           </button>
                         </div>
                       </div>
+                    );
+                  }
+
+                  if (isServiceProduct) {
+                    return (
+                      <button
+                        id="btn-schedule-service"
+                        onClick={() => onOpenServiceBooking?.({
+                          id: product.id,
+                          merchantId: product.merchantId,
+                          merchantName: product.merchantName,
+                          merchantCategory: product.merchantCategory,
+                          merchantRating: product.merchantRating,
+                          merchantAddress: product.merchantAddress,
+                          title: product.name,
+                          description: product.description,
+                          price: product.price,
+                          durationMinutes: 60,
+                          category: product.category,
+                          itemType: product.itemType,
+                          image: product.images[0] || product.image || '',
+                          professionals: ['Profissional responsável'],
+                          availableDays: [],
+                          timeSlots: [],
+                          pricingTable: currentMerchant?.pricingTable,
+                          pixKey: product.pixKey || currentMerchant?.pixKey,
+                          pixBeneficiaryName: product.pixBeneficiaryName || currentMerchant?.pixBeneficiaryName,
+                          status: 'active'
+                        })}
+                        className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm sm:text-base rounded-xl shadow-md flex items-center justify-center gap-2"
+                      >
+                        <Calendar className="w-5 h-5" />
+                        <span>Agendar horário</span>
+                      </button>
                     );
                   }
 
