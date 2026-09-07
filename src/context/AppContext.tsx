@@ -1374,6 +1374,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (data.attachmentUrl) {
         const linkedOrder = orders.find((order) => order.id === data.subpedidoId || order.code === data.subpedidoId);
+        const financialMessage = data.message.toLowerCase();
+        const transactionType = /pix|pagamento|comprovante|transfer[eê]ncia|dep[oó]sito/.test(financialMessage)
+          ? 'PIX'
+          : 'TRANSACAO';
         const receipt: PaymentReceiptAudit = {
           id: `receipt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           orderId: linkedOrder?.id,
@@ -1389,7 +1393,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           amount: linkedOrder?.totalAmount,
           attachmentUrl: data.attachmentUrl,
           fileName: data.attachmentName,
-          transactionType: 'PIX',
+          transactionType,
           status: 'ENVIADO',
           createdAt: newMsg.createdAt
         };
