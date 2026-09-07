@@ -110,12 +110,12 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
   const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(true);
 
   // Quick Account Login Helper
-  const handleQuickLogin = (email: string, pass: string) => {
+  const handleQuickLogin = async (email: string, pass: string) => {
     setErrorMessage(null);
     setSuccessMessage(null);
     setLoginEmail(email);
     setLoginPassword(pass);
-    const result = login(email, pass, true);
+    const result = await login(email, pass, true);
     if (result.requires2FA) {
       setIs2FAStep(true);
       setPending2FAEmail(email);
@@ -129,7 +129,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
     }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -143,7 +143,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
       return;
     }
 
-    const result = login(loginEmail, loginPassword, rememberMe);
+    const result = await login(loginEmail, loginPassword, rememberMe);
 
     if (result.requires2FA) {
       setIs2FAStep(true);
@@ -233,8 +233,8 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
       setSuccessMessage('Senha atualizada com sucesso! Realizando login automático...');
       
       // Auto-login or redirect to login tab
-      setTimeout(() => {
-        const loginRes = login(forgotEmail.trim(), newResetPassword, true);
+      setTimeout(async () => {
+        const loginRes = await login(forgotEmail.trim(), newResetPassword, true);
         if (loginRes.success && !loginRes.requires2FA) {
           if (onSuccess) onSuccess();
         } else {

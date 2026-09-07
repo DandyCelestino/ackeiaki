@@ -46,7 +46,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -56,7 +56,7 @@ export const ExclusiveAccessGate: React.FC<ExclusiveAccessGateProps> = ({
       return;
     }
 
-    const res = login(email.trim(), password, true);
+    const res = await login(email.trim(), password, true);
 
     if (res.requires2FA) {
       if (res.user?.role !== requiredRole && requiredRole === 'MASTER') {

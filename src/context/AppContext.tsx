@@ -64,6 +64,7 @@ import { getCommissionRateForTier, getMaxProductsForTier } from '../data/members
 import { NotificationService } from '../services/notification_service';
 import { multiStoreDb } from '../services/multiStoreDatabase';
 import { syncAppDataToSupabase, SupabaseSyncResult } from '../services/supabaseAppSync';
+import { supabase } from '../lib/supabase';
 
 export type AppEnvironment = 'MARKETPLACE' | 'SELLER_PORTAL' | 'MASTER_PANEL';
 
@@ -88,13 +89,13 @@ export interface AppContextType {
   setCurrentCity: (city: string) => void;
   
   // Auth & Security
-  login: (email: string, password?: string, rememberMe?: boolean) => {
+  login: (email: string, password?: string, rememberMe?: boolean) => Promise<{
     success: boolean;
     requires2FA?: boolean;
     message?: string;
     user?: User;
     simulated2FACode?: string;
-  };
+  }>;
   verifyTwoFactorCode: (email: string, code: string, rememberMe?: boolean) => {
     success: boolean;
     message?: string;
@@ -1610,20 +1611,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Auth Operations with Two-Factor Authentication (2FA) & Role Isolation
-  const login = (
+  const login = async (
     email: string,
     password?: string,
     rememberMe: boolean = true
-  ): {
+  ): Promise<{
     success: boolean;
     requires2FA?: boolean;
     message?: string;
     user?: User;
     simulated2FACode?: string;
-  } => {
+  }> => {
     const cleanEmail = email.trim().toLowerCase();
-    const configuredMasterPassword =
-      typeof import.meta !== 'undefined' ? import.meta.env.VITE_MASTER_PASSWORD : undefined;
     
     // Check in users list or initial fallback
     let found = users.find((u) => u.email.toLowerCase() === cleanEmail) ||
@@ -1643,15 +1642,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
 
-      // The Master account is configured through the local environment, while
-      // regular accounts continue using their stored password.
-      const isConfiguredMasterLogin =
-        found.role === 'MASTER' &&
-        cleanEmail === 'telecom.david@gmail.com' &&
-        Boolean(configuredMasterPassword) &&
-        password === configuredMasterPassword;
+      if (found.role === 'MASTER') {
+        if (!supabase || !password) {
+          return { success: false, message: 'A conta Master precisa estar configurada no Supabase Auth.' };
+        }
+        const { error: authError } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (authError) return { success: false, message: 'E-mail ou senha inválidos no Supabase Auth.' };
+      }
 
-      if ((!found.password || !password || found.password !== password) && !isConfiguredMasterLogin) {
+      if (found.role !== 'MASTER' && (!found.password || !password || found.password !== password)) {
         return {
           success: false,
           message: 'E-mail ou senha inválidos. Verifique suas credenciais de acesso.'

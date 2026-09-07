@@ -35,7 +35,19 @@ O resultado esperado e uma linha com os quatro nomes preenchidos.
 
 O frontend usa `localStorage` como fonte principal para usuarios, lojas, produtos e pedidos. O botao de sincronizacao do painel Master envia um snapshot sob demanda, mas nao deve usar a chave publica do navegador para gravar diretamente nas tabelas de dominio.
 
-Em producao, a escrita deve ser executada por uma Edge Function ou backend autenticado com `service_role`. A chave publica configurada em `VITE_SUPABASE_PUBLISHABLE_KEY` deve permanecer no frontend apenas para leitura permitida pelo RLS.
+Em producao, a escrita e executada pela Edge Function `sync-app-data`, que usa `service_role` somente no ambiente server-side. A chave publica configurada em `VITE_SUPABASE_PUBLISHABLE_KEY` permanece no frontend apenas para leitura permitida pelo RLS.
+
+## 4. Publicar a sincronizacao segura
+
+Instale e autentique o Supabase CLI e, na pasta do projeto, execute:
+
+```bash
+supabase functions deploy sync-app-data
+```
+
+A funcao exige uma sessao do Supabase Auth e confirma que o e-mail autenticado possui uma linha `app_users` ativa com `role = 'MASTER'`. Crie primeiro esse usuario no Supabase Auth com o mesmo e-mail do usuario Master local e execute o schema antes do primeiro snapshot.
+
+O frontend chama apenas `supabase.functions.invoke('sync-app-data')`; nenhum `service_role` ou upsert administrativo e enviado ao navegador.
 
 ## Diagnostico verificado em 2026-09-05
 
@@ -43,4 +55,4 @@ A URL e a chave publica configuradas em `.env.local` respondem corretamente. A A
 
 Depois disso, o botao **Sincronizacao oficial Master** ainda retornara bloqueio de escrita se for executado diretamente pelo navegador. Para persistencia completa, publique uma Edge Function autenticada e mova a chamada de `syncAppDataToSupabase` para essa funcao.
 
-O login Master atual ainda usa `VITE_MASTER_PASSWORD` no frontend. Essa configuracao e apenas temporaria para o prototipo: qualquer segredo em `VITE_*` fica visivel no navegador. Antes de producao, migre esse login para Supabase Auth ou para uma Edge Function e remova a senha do `.env.local` publico.
+O login Master agora usa Supabase Auth. Remova `VITE_MASTER_PASSWORD` do `.env.local` e crie a conta Master no Supabase Auth. Senhas nunca devem ser armazenadas em `VITE_*` nem no snapshot local.
