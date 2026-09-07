@@ -188,6 +188,13 @@ export interface User {
   measurements?: VipMeasurements;
   preferences?: CustomerPreferences;
   notificationPreferences?: NotificationPreferences;
+  legalConsent?: {
+    accepted: boolean;
+    termsVersion: string;
+    privacyVersion: string;
+    acceptedAt: string;
+    statement: string;
+  };
   emergencyContact?: EmergencyContact;
   generalNotes?: string;
   membershipTier?: MembershipTier;

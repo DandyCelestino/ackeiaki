@@ -54,7 +54,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     completePasswordReset,
     resendEmailConfirmation,
     currentCity,
-    triggerToast
+    triggerToast,
+    openTermsModal,
+    openPrivacyModal
   } = useApp();
 
   const [tab, setTab] = useState<'login' | 'register-customer' | 'register-merchant' | 'forgot-password' | 'resend-confirmation'>(initialTab);
@@ -94,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [customerRefName, setCustomerRefName] = useState('');
   const [customerRefPhone, setCustomerRefPhone] = useState('');
   const [customerTier, setCustomerTier] = useState<MembershipTier>('GRATIS');
-  const [customerTermsAccepted, setCustomerTermsAccepted] = useState(true);
+  const [customerTermsAccepted, setCustomerTermsAccepted] = useState(false);
   const [customerAvatar, setCustomerAvatar] = useState('');
 
   // Merchant / Provider registration state
@@ -130,7 +132,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [supportsTrial, setSupportsTrial] = useState(false);
   const [supportsAppointments, setSupportsAppointments] = useState(true);
   const [supportsDelivery, setSupportsDelivery] = useState(true);
-  const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(true);
+  const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(false);
 
   // Forgot password flow state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -273,7 +275,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         references,
         city: currentCity,
         membershipTier: customerTier,
-        avatar: customerAvatar
+        avatar: customerAvatar,
+        legalConsent: {
+          accepted: true,
+          termsVersion: '2026.09-CADASTRO',
+          privacyVersion: '2026.09-LGPD',
+          acceptedAt: new Date().toISOString(),
+          statement: 'Usuário declarou ciência das normas, responsabilidades, validação cadastral e consequências de dados falsos.'
+        }
       },
       customerPassword,
       customerTier
@@ -372,6 +381,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         supportsTrial,
         supportsAppointments,
         membershipTier: merchantTier
+        ,legalConsent: {
+          accepted: true,
+          termsVersion: '2026.09-CADASTRO',
+          privacyVersion: '2026.09-LGPD',
+          acceptedAt: new Date().toISOString(),
+          statement: 'Parceiro declarou ciência das normas, responsabilidades, validação documental e consequências de dados falsos.'
+        }
       },
       {
         name: merchantOwnerName,
@@ -1021,7 +1037,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 w-4 h-4 border-slate-300"
                   />
                   <span>
-                    Concordo com os <strong className="text-slate-800">Termos de Uso</strong> e autorizo o tratamento dos meus dados conforme as diretrizes da <strong className="text-slate-800">LGPD</strong>.
+                    Declaro que li e aceito o <button type="button" onClick={openTermsModal} className="font-bold text-blue-700 underline">Contrato de Adesão e Termos de Uso</button> e a <button type="button" onClick={openPrivacyModal} className="font-bold text-blue-700 underline">Política de Privacidade</button>. Estou ciente de que respondo pela veracidade dos dados inseridos, que o Achei Aqui poderá validar, aprovar, solicitar correção, limitar ou excluir cadastros irregulares, e que a inserção deliberada de dados falsos pode gerar consequências civis, administrativas e penais.
                   </span>
                 </label>
               </div>
@@ -1542,7 +1558,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 w-4 h-4 border-slate-300"
                   />
                   <span>
-                    Declaro a veracidade do <strong className="text-slate-800">CPF, ID e Referências informadas</strong> e concordo com os Termos de Credenciamento Achei Aqui.
+                    Declaro a veracidade do <strong className="text-slate-800">CPF, ID, referências e demais dados</strong> e aceito o <button type="button" onClick={openTermsModal} className="font-bold text-blue-700 underline">Contrato de Adesão e Termos de Credenciamento</button> e a <button type="button" onClick={openPrivacyModal} className="font-bold text-blue-700 underline">Política de Privacidade</button>. Estou ciente de que o Achei Aqui poderá validar documentos, aprovar, suspender ou excluir o cadastro diante de irregularidades, e que dados falsos podem gerar consequências civis, administrativas e penais.
                   </span>
                 </label>
               </div>

@@ -425,6 +425,15 @@ function MarketplaceApp() {
                 </li>
                 <li>
                   <button
+                    onClick={openTermsModal}
+                    className="text-rose-300 hover:text-white flex items-center gap-1.5 text-left group font-semibold"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-rose-400 group-hover:text-rose-200 shrink-0" />
+                    <span>Contrato de Ciência e Responsabilidades</span>
+                  </button>
+                </li>
+                <li>
+                  <button
                     onClick={() => openPolicyModal('customer')}
                     className="text-emerald-300 hover:text-white flex items-center gap-1.5 text-left group"
                   >

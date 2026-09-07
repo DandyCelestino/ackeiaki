@@ -44,7 +44,9 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
     completePasswordReset,
     currentCity,
     frontendConfig,
-    triggerToast
+    triggerToast,
+    openTermsModal,
+    openPrivacyModal
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'login' | 'forgot-password' | 'register-customer' | 'register-merchant'>('login');
@@ -84,7 +86,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
   const [customerCpf, setCustomerCpf] = useState('');
   const [customerNeighborhood, setCustomerNeighborhood] = useState('Centro');
   const [customerStreet, setCustomerStreet] = useState('');
-  const [customerTermsAccepted, setCustomerTermsAccepted] = useState(true);
+  const [customerTermsAccepted, setCustomerTermsAccepted] = useState(false);
 
   // Merchant Register Form
   const [merchantType, setMerchantType] = useState<'STORE' | 'SERVICE_PROVIDER'>('SERVICE_PROVIDER');
@@ -107,7 +109,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
   const [ref2Name, setRef2Name] = useState('');
   const [ref2Phone, setRef2Phone] = useState('');
   const [ref2Role, setRef2Role] = useState('');
-  const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(true);
+  const [merchantTermsAccepted, setMerchantTermsAccepted] = useState(false);
 
   // Quick Account Login Helper
   const handleQuickLogin = async (email: string, pass: string) => {
@@ -279,7 +281,14 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
         phone: customerPhone.trim() || '(21) 99999-8888',
         cpf: customerCpf.trim() || '000.000.000-00',
         neighborhood: customerNeighborhood,
-        address: `${customerStreet || 'Rua Principal'}, ${customerNeighborhood}, Cachoeiras de Macacu - RJ`
+        address: `${customerStreet || 'Rua Principal'}, ${customerNeighborhood}, Cachoeiras de Macacu - RJ`,
+        legalConsent: {
+          accepted: true,
+          termsVersion: '2026.09-CADASTRO',
+          privacyVersion: '2026.09-LGPD',
+          acceptedAt: new Date().toISOString(),
+          statement: 'Usuário declarou ciência das normas, responsabilidades, validação cadastral e consequências de dados falsos.'
+        }
       },
       customerPassword
     );
@@ -345,7 +354,14 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
         email: merchantEmail.trim().toLowerCase(),
         phone: merchantPhone.trim() || '(21) 99999-1234',
         cpf: merchantCnpjOrCpf.trim() || '00.000.000/0001-00',
-        references
+        references,
+        legalConsent: {
+          accepted: true,
+          termsVersion: '2026.09-CADASTRO',
+          privacyVersion: '2026.09-LGPD',
+          acceptedAt: new Date().toISOString(),
+          statement: 'Parceiro declarou ciência das normas, responsabilidades, validação documental e consequências de dados falsos.'
+        }
       },
       merchantPassword
     );
@@ -928,7 +944,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
                     onChange={(e) => setCustomerTermsAccepted(e.target.checked)}
                     className="rounded border-slate-700 bg-slate-950 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                   />
-                  <span>Concordo com os Termos de Uso e Política de Privacidade do Achei Aqui</span>
+                  <span>Declaro que li e aceito os <button type="button" onClick={openTermsModal} className="font-bold text-blue-700 underline">Termos de Uso</button> e a <button type="button" onClick={openPrivacyModal} className="font-bold text-blue-700 underline">Política de Privacidade</button>. Respondo pela veracidade dos dados e estou ciente de que irregularidades podem levar à validação, suspensão ou exclusão da conta e a consequências legais.</span>
                 </label>
               </div>
 
@@ -1112,7 +1128,7 @@ export const PlatformAccessGate: React.FC<PlatformAccessGateProps> = ({ onSucces
                     onChange={(e) => setMerchantTermsAccepted(e.target.checked)}
                     className="rounded border-slate-700 bg-slate-950 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                   />
-                  <span>Concordo com os Termos de Credenciamento Comercial Achei Aqui</span>
+                  <span>Declaro a veracidade dos dados, documentos e referências e aceito os <button type="button" onClick={openTermsModal} className="font-bold text-blue-700 underline">Termos de Credenciamento</button> e a <button type="button" onClick={openPrivacyModal} className="font-bold text-blue-700 underline">Política de Privacidade</button>. Estou ciente de que o APP poderá validar, aprovar, suspender ou excluir o cadastro diante de irregularidades.</span>
                 </label>
               </div>
 

@@ -122,7 +122,19 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* 4. Mutual Reviews and Ethics */}
+          <div className="space-y-3">
+            <h4 className="font-black text-slate-900 text-sm sm:text-base flex items-center space-x-2 border-b border-slate-200 pb-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+              <span>4. Declaração de Ciência, Veracidade e Fiscalização</span>
+            </h4>
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-950 space-y-2">
+              <p>Ao criar uma conta, o usuário confirma que os dados, documentos, referências, anúncios, preços e comprovantes enviados são verdadeiros, atuais e de sua responsabilidade.</p>
+              <p>O Achei Aqui poderá realizar validações, solicitar documentos, aprovar, recusar, suspender ou excluir cadastros, anúncios e transações quando identificar inconsistências, fraude, uso indevido ou violação destas normas.</p>
+              <p>A inserção consciente de informação falsa, documento adulterado ou comprovante fraudulento pode gerar responsabilização civil, administrativa e penal, além da exclusão da conta e preservação dos registros para auditoria e autoridades competentes, quando exigido.</p>
+            </div>
+          </div>
+
+          {/* 5. Mutual Reviews and Ethics */}
           <div className="space-y-3">
             <h4 className="font-black text-slate-900 text-sm sm:text-base flex items-center space-x-2 border-b border-slate-200 pb-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -133,7 +145,7 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({ isOpen, onClos
             </p>
           </div>
 
-          {/* 5. Jurisdiction and Dispute Resolution */}
+          {/* 6. Jurisdiction and Dispute Resolution */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
               <strong className="text-slate-900 block">Legislação Aplicável e Foro de Eleição:</strong>

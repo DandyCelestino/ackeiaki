@@ -1872,6 +1872,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       references: customerData.references,
       addresses: customerData.addresses,
       avatar: customerData.avatar,
+      legalConsent: customerData.legalConsent,
       isEmailVerified: true,
       twoFactorEnabled: false,
       createdAt: new Date().toISOString()
@@ -1880,7 +1881,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers((prev) => [...prev, newUser]);
     setCurrentUser(newUser);
     setCurrentEnvironment('MARKETPLACE');
-    addAuditLog('CUSTOMER_REGISTER', `Novo cliente cadastrado: ${newUser.name} (${newUser.email}) - Modalidade: ${newUser.membershipTier}`);
+    addAuditLog('CUSTOMER_REGISTER', `Novo cliente cadastrado com contrato aceito: ${newUser.name} (${newUser.email}) - Modalidade: ${newUser.membershipTier}`, {
+      category: 'USER_MANAGEMENT',
+      entityId: newUser.id,
+      entityType: 'USER',
+      metadata: { legalConsent: newUser.legalConsent }
+    });
     NotificationService.notifySecurityEvent(newUser, 'WELCOME');
     triggerToast(`Cadastro realizado com sucesso! Bem-vindo(a) ao Achei Aqui no plano ${newUser.membershipTier}.`);
     return newUser;
@@ -1952,6 +1958,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       avatar: ownerData.avatar,
       idDocument: newMerchant.idDocument,
       references: newMerchant.references,
+      legalConsent: ownerData.legalConsent,
       role: 'VENDEDOR',
       membershipTier: selectedTier,
       merchantId: newStoreId,
@@ -1966,7 +1973,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers((prev) => [...prev, newOwnerUser]);
     setCurrentUser(newOwnerUser);
     setCurrentEnvironment('SELLER_PORTAL');
-    addAuditLog('MERCHANT_REGISTER', `Novo parceiro credenciado: ${newMerchant.name} (Modalidade: ${selectedTier}, Limite: ${maxProducts} prods, Taxa: ${commission}%)`);
+    addAuditLog('MERCHANT_REGISTER', `Novo parceiro credenciado com contrato aceito: ${newMerchant.name} (Modalidade: ${selectedTier}, Limite: ${maxProducts} prods, Taxa: ${commission}%)`, {
+      category: 'USER_MANAGEMENT',
+      entityId: newOwnerUser.id,
+      entityType: 'USER',
+      metadata: { merchantId: newMerchant.id, legalConsent: newOwnerUser.legalConsent }
+    });
     NotificationService.notifySecurityEvent(newOwnerUser, 'WELCOME');
     triggerToast(`Cadastro realizado com sucesso! Painel ativado no plano ${selectedTier}.`);
     return newMerchant;
