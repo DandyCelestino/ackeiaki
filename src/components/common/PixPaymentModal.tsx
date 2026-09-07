@@ -25,11 +25,15 @@ interface PixPaymentModalProps {
   title: string;
   subtitle?: string;
   amount: number;
-  paymentType: 'PLAN_UPGRADE' | 'BANNER_PACKAGE' | 'ORDER_COMMISSION';
+  paymentType: 'PLAN_UPGRADE' | 'BANNER_PACKAGE' | 'ORDER_COMMISSION' | 'SERVICE_BOOKING';
   orderId?: string;
   targetTier?: MembershipTier;
   bannerCount?: number;
   currentTierName?: string;
+  pixKey?: string;
+  pixBeneficiaryName?: string;
+  onReceiptAttached?: (receiptDataUrl: string, fileName: string) => void;
+  requireReceipt?: boolean;
   onConfirmSuccess: () => void;
 }
 
@@ -44,6 +48,10 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
   targetTier,
   bannerCount,
   currentTierName = 'Grátis',
+  pixKey,
+  pixBeneficiaryName,
+  onReceiptAttached,
+  requireReceipt = false,
   onConfirmSuccess
 }) => {
   const [copiedKey, setCopiedKey] = useState(false);
@@ -83,11 +91,13 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   // Synthetic standard PIX Copia e Cola EMV payload
-  const pixCopyPasteCode = `00020126580014br.gov.bcb.pix0114${OFFICIAL_PIX_INFO.cnpjClean}520400005303986540${amount.toFixed(2).length < 10 ? '0' + amount.toFixed(2).length : amount.toFixed(2).length}${amount.toFixed(2)}5802BR5925DAVID CELESTINO DOS SANT6021CACHOEIRAS DE MACACU62070503***6304${Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase()}`;
+  const recipientPixKey = pixKey || OFFICIAL_PIX_INFO.cnpj;
+  const recipientName = pixBeneficiaryName || OFFICIAL_PIX_INFO.beneficiary;
+  const pixCopyPasteCode = pixKey || `00020126580014br.gov.bcb.pix0114${OFFICIAL_PIX_INFO.cnpjClean}520400005303986540${amount.toFixed(2).length < 10 ? '0' + amount.toFixed(2).length : amount.toFixed(2).length}${amount.toFixed(2)}5802BR5925DAVID CELESTINO DOS SANT6021CACHOEIRAS DE MACACU62070503***6304${Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase()}`;
 
   const handleCopyKey = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(OFFICIAL_PIX_INFO.cnpj);
+      navigator.clipboard.writeText(recipientPixKey);
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 3000);
     }
@@ -166,11 +176,11 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
             <div className="pt-3 border-t border-white/10 space-y-1 text-xs">
               <div className="flex items-center justify-between text-slate-300">
                 <span>Favorecido Oficial:</span>
-                <strong className="text-white font-bold">{OFFICIAL_PIX_INFO.beneficiary}</strong>
+                <strong className="text-white font-bold">{recipientName}</strong>
               </div>
               <div className="flex items-center justify-between text-slate-300">
                 <span>Chave PIX (CNPJ):</span>
-                <strong className="text-amber-300 font-mono font-bold">{OFFICIAL_PIX_INFO.cnpj}</strong>
+                <strong className="text-amber-300 font-mono font-bold">{recipientPixKey}</strong>
               </div>
               <div className="flex items-center justify-between text-slate-400 text-[11px]">
                 <span>Cidade:</span>
@@ -245,7 +255,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
                   <input
                     type="text"
                     readOnly
-                    value={OFFICIAL_PIX_INFO.cnpj}
+                    value={recipientPixKey}
                     className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800"
                   />
                   <button
@@ -283,16 +293,48 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
 
           {/* Business Rules & Failure Disclaimer */}
           <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-xl text-[11px] text-slate-700 space-y-1.5">
+
+                      {onReceiptAttached && (
+                        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-950 space-y-2">
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <FileCheck className="w-4 h-4 text-blue-700" />
+                            <span>Envie o comprovante ao prestador</span>
+                          </div>
+                          <p className="text-[11px] text-blue-800">Após realizar o PIX, anexe a imagem ou PDF para confirmar o agendamento pelo chat.</p>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => onReceiptAttached(String(reader.result), file.name);
+                              reader.readAsDataURL(file);
+                              setAttachedReceiptName(file.name);
+                            }}
+                            className="block w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:font-bold file:text-white"
+                          />
+                          {attachedReceiptName && <p className="text-[11px] font-semibold text-emerald-700">Anexo selecionado: {attachedReceiptName}</p>}
+                        </div>
+                      )}
             <div className="flex items-center space-x-1.5 font-bold text-slate-900">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Regra de Liberação da Modalidade / Recurso:</span>
+              <span>{paymentType === 'SERVICE_BOOKING' ? 'Regra do agendamento:' : 'Regra de Liberação da Modalidade / Recurso:'}</span>
             </div>
-            <p className="leading-relaxed">
-              • <strong>Se o pagamento for confirmado:</strong> o novo plano/banner/comissão será <strong>liberado imediatamente</strong> e uma notificação de recebimento será transmitida ao Administrador Master da plataforma.
-            </p>
-            <p className="leading-relaxed text-amber-900">
-              • <strong>Se não for pago:</strong> o novo plano permanecerá <strong>bloqueado</strong> com status <em>"Aguardando Pagamento PIX"</em> e seu estabelecimento <strong>permanecerá ativo na modalidade atual ({currentTierName})</strong>.
-            </p>
+            {paymentType === 'SERVICE_BOOKING' ? (
+              <p className="leading-relaxed">
+                • <strong>Após o PIX:</strong> o comprovante será enviado ao prestador pelo chat oficial, que confirmará a vaga e responderá por esse mesmo canal.
+              </p>
+            ) : (
+              <>
+                <p className="leading-relaxed">
+                  • <strong>Se o pagamento for confirmado:</strong> o novo plano/banner/comissão será <strong>liberado imediatamente</strong> e uma notificação de recebimento será transmitida ao Administrador Master da plataforma.
+                </p>
+                <p className="leading-relaxed text-amber-900">
+                  • <strong>Se não for pago:</strong> o novo plano permanecerá <strong>bloqueado</strong> com status <em>"Aguardando Pagamento PIX"</em> e seu estabelecimento <strong>permanecerá ativo na modalidade atual ({currentTierName})</strong>.
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -308,7 +350,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
 
           <button
             type="button"
-            disabled={paymentStatus !== 'PENDING'}
+            disabled={paymentStatus !== 'PENDING' || (requireReceipt && !attachedReceiptName)}
             onClick={handleConfirmPaid}
             className="w-full sm:w-auto px-6 py-2.5 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-75"
           >

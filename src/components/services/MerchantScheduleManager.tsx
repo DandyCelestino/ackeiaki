@@ -118,6 +118,8 @@ export const MerchantScheduleManager: React.FC<MerchantScheduleManagerProps> = (
     merchant.pricingTable?.pricingNotes ||
       'Deslocamento incluso para o Centro, Papucaia e Japuíba. Peças e materiais orçados à parte com total transparência.'
   );
+  const [pixKey, setPixKey] = useState(merchant.pixKey || '');
+  const [pixBeneficiaryName, setPixBeneficiaryName] = useState(merchant.pixBeneficiaryName || merchant.name);
 
   // Professional Credentials & References state
   const [registrationNumber, setRegistrationNumber] = useState(
@@ -234,6 +236,8 @@ export const MerchantScheduleManager: React.FC<MerchantScheduleManagerProps> = (
     updateStoreProfile(merchant.id, {
       scheduleConfig: scheduleData,
       pricingTable: pricingData,
+      pixKey: pixKey || undefined,
+      pixBeneficiaryName: pixBeneficiaryName || merchant.name,
       credentials: credentialsData,
       references
     });
@@ -670,6 +674,37 @@ export const MerchantScheduleManager: React.FC<MerchantScheduleManagerProps> = (
                 placeholder="Ex: Peças e insumos cobrados à parte. Atendimento gratuito no Centro, Papucaia e Japuíba..."
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:bg-white focus:border-blue-500"
               />
+            </div>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+              <div>
+                <h4 className="text-xs font-black text-amber-950">Recebimento do agendamento via PIX</h4>
+                <p className="text-[11px] text-amber-800 mt-1">
+                  Esta chave será exibida ao cliente ao finalizar o agendamento. O comprovante será enviado no chat oficial para sua confirmação.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Chave PIX *</label>
+                  <input
+                    type="text"
+                    value={pixKey}
+                    onChange={(e) => setPixKey(e.target.value)}
+                    placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Nome do favorecido *</label>
+                  <input
+                    type="text"
+                    value={pixBeneficiaryName}
+                    onChange={(e) => setPixBeneficiaryName(e.target.value)}
+                    placeholder="Nome que aparecerá no PIX"
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

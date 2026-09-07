@@ -77,6 +77,26 @@ export interface AuditLog {
   isoDate?: string;
 }
 
+export interface PaymentReceiptAudit {
+  id: string;
+  orderId?: string;
+  subpedidoId: string;
+  orderCode?: string;
+  customerId?: string;
+  customerName?: string;
+  merchantId?: string;
+  merchantName?: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'CLIENTE' | 'VENDEDOR' | 'MASTER' | 'SISTEMA';
+  amount?: number;
+  attachmentUrl: string;
+  fileName?: string;
+  transactionType: 'PIX' | 'TRANSACAO';
+  status: 'ENVIADO' | 'EM_ANALISE' | 'CONFIRMADO' | 'RECUSADO';
+  createdAt: string;
+}
+
 export interface AuditStats {
   total: number;
   byCategory: Record<AuditCategory, number>;
@@ -358,6 +378,9 @@ export interface StoreMerchant {
   references?: ProfessionalReference[]; // Referências Obrigatórias
   credentials?: ProfessionalCredentials; // Registro profissional (CRM, CRO, CREA etc.)
   pricingTable?: ServicePricingTable; // Preço por hora, dia e mês
+  pixKey?: string; // Chave PIX informada pelo prestador para receber agendamentos
+  pixKeyType?: Product['pixKeyType'];
+  pixBeneficiaryName?: string;
   scheduleConfig?: MerchantScheduleConfig; // Agenda com dias e horas vagas
   isServiceProvider?: boolean;
   offeredItemTypes?: ItemType[];

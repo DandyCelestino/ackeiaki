@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AuditLog, InAppNotification, Order, Product, ServiceItem, StoreMerchant, SystemSettings, User } from '../types';
+import { AuditLog, InAppNotification, Order, PaymentReceiptAudit, Product, ServiceItem, StoreMerchant, SystemSettings, User } from '../types';
 
 export interface SupabaseSyncInput {
   users: User[];
@@ -9,6 +9,7 @@ export interface SupabaseSyncInput {
   orders: Order[];
   notifications?: InAppNotification[];
   auditLogs?: AuditLog[];
+  paymentReceipts?: PaymentReceiptAudit[];
   systemSettings?: SystemSettings;
 }
 

@@ -18,7 +18,7 @@ import {
   ShoppingBag,
   MessageSquare
 } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, ServiceItem } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { ReviewsList } from '../reviews/ReviewsList';
 import { ServicePricingTableCard } from '../services/ServicePricingTableCard';
@@ -28,6 +28,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onSelectProduct: (p: Product) => void;
   onOpenCheckout: (product: Product, initialModality?: 'DELIVERY' | 'RETIRADA' | 'EXPERIMENTAÇÃO', selectedVariations?: { [key: string]: string }) => void;
+  onOpenServiceBooking?: (service: ServiceItem) => void;
   onSelectStore?: (merchantId: string) => void;
 }
 
@@ -36,6 +37,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onSelectProduct,
   onOpenCheckout,
+  onOpenServiceBooking,
   onSelectStore
 }) => {
   const {
@@ -272,7 +274,33 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <button
                       id="btn-schedule-shortcut"
                       onClick={() => {
-                        onOpenCheckout(product, 'DELIVERY', currentVariations);
+                        if (onOpenServiceBooking) {
+                          onOpenServiceBooking({
+                            id: product.id,
+                            merchantId: product.merchantId,
+                            merchantName: product.merchantName,
+                            merchantCategory: product.merchantCategory,
+                            merchantRating: product.merchantRating,
+                            merchantAddress: product.merchantAddress,
+                            title: product.name,
+                            description: product.description,
+                            price: product.price,
+                            durationMinutes: 60,
+                            category: product.category,
+                            itemType: product.itemType,
+                            image: product.images[0] || product.image || '',
+                            professionals: ['Profissional responsável'],
+                            availableDays: [],
+                            timeSlots: [],
+                            executionLocation: product.executionLocation,
+                            pixKey: product.pixKey,
+                            pixKeyType: product.pixKeyType,
+                            pixBeneficiaryName: product.pixBeneficiaryName,
+                            status: 'active'
+                          });
+                        } else {
+                          onOpenCheckout(product, 'DELIVERY', currentVariations);
+                        }
                       }}
                       className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2"
                     >

@@ -20,6 +20,7 @@ import {
 import { ServiceItem, Order, ModalityType } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { ServicePricingTableCard } from '../services/ServicePricingTableCard';
+import { PixPaymentModal } from '../common/PixPaymentModal';
 
 interface ServiceBookingModalProps {
   service: ServiceItem | null;
@@ -32,7 +33,16 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
   onClose,
   onBookingSuccess
 }) => {
-  const { currentUser, createOrder, triggerToast, merchants, promptAuthRequirement } = useApp();
+  const {
+    currentUser,
+    createOrder,
+    triggerToast,
+    merchants,
+    promptAuthRequirement,
+    openSubOrderChat,
+    sendSubOrderMessage,
+    sendInAppNotification
+  } = useApp();
 
   const currentMerchant = merchants.find((m) => m.id === service?.merchantId);
 
@@ -64,6 +74,8 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '');
   const [customerNotes, setCustomerNotes] = useState('');
   const [confirmedBooking, setConfirmedBooking] = useState<Order | null>(null);
+  const [isPixOpen, setIsPixOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<{ dataUrl: string; fileName: string } | null>(null);
 
   if (!service) return null;
 
@@ -134,7 +146,55 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
 
     setConfirmedBooking(newBooking);
     onBookingSuccess(newBooking);
+    setReceiptData(null);
+    setIsPixOpen(true);
     triggerToast(`Solicitação de agendamento ${newBooking.code} enviada para o prestador!`);
+  };
+
+  const handlePixConfirmed = () => {
+    if (!confirmedBooking) return;
+
+    sendSubOrderMessage({
+      subpedidoId: confirmedBooking.id,
+      codigoSubpedido: confirmedBooking.code,
+      senderId: confirmedBooking.userId,
+      senderName: confirmedBooking.customerName,
+      senderRole: 'CLIENTE',
+      recipientName: confirmedBooking.merchantName,
+      recipientRole: 'VENDEDOR',
+      message: `PIX realizado para o agendamento de ${selectedDate} às ${selectedTime}. Comprovante anexado para conferência do prestador.`,
+      attachmentUrl: receiptData?.dataUrl
+    });
+
+    sendInAppNotification({
+      title: 'Novo agendamento com PIX enviado',
+      message: `${confirmedBooking.customerName} agendou ${service.title} para ${selectedDate} às ${selectedTime} e enviou o comprovante de pagamento.`,
+      category: 'PEDIDO',
+      priority: 'HIGH',
+      audience: 'SPECIFIC_MERCHANT',
+      recipientMerchantId: confirmedBooking.merchantId,
+      recipientName: confirmedBooking.merchantName,
+      senderName: confirmedBooking.customerName,
+      senderRole: 'CLIENTE',
+      actionUrl: 'chat',
+      actionLabel: 'Conferir agendamento e comprovante',
+      orderId: confirmedBooking.id,
+      orderCode: confirmedBooking.code
+    });
+
+    setIsPixOpen(false);
+    openSubOrderChat({
+      subpedidoId: confirmedBooking.id,
+      codigoSubpedido: confirmedBooking.code,
+      merchantId: confirmedBooking.merchantId,
+      merchantName: confirmedBooking.merchantName,
+      customerId: confirmedBooking.userId,
+      customerName: confirmedBooking.customerName,
+      orderTitle: service.title,
+      orderStatus: 'PIX enviado - aguardando confirmação',
+      orderTotal: confirmedBooking.totalAmount
+    });
+    triggerToast('PIX enviado! O comprovante foi encaminhado ao prestador pelo chat.');
   };
 
   return (
@@ -175,13 +235,11 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
               </div>
 
               <div>
-                <h4 className="text-xl font-black text-slate-900">
-                  Agendamento Enviado com Sucesso!
+                  <h4 className="text-xl font-black text-slate-900">
+                  Agendamento aguardando confirmação do PIX
                 </h4>
                 <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto">
-                  Sua solicitação foi encaminhada para <strong>{service.merchantName}</strong>. 
-                  Você receberá a confirmação e as orientações oficiais diretamente na aba 
-                  <strong>"Meus Agendamentos"</strong> do seu perfil.
+                  O horário foi reservado para você e o prestador foi avisado. Finalize o PIX e envie o comprovante no canal oficial para que ele confirme o atendimento.
                 </p>
               </div>
 
@@ -236,10 +294,10 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
               </div>
 
               <button
-                onClick={onClose}
+                onClick={() => setIsPixOpen(true)}
                 className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md"
               >
-                Concluir & Acompanhar no Perfil
+                Abrir pagamento PIX e enviar comprovante
               </button>
             </div>
           ) : (
@@ -257,11 +315,11 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
                 onSelectPricingPlan={(plan) => setSelectedPricingType(plan)}
               />
 
-              {/* 1. Modalidade de Atendimento */}
+              {/* 1. Local do atendimento: o agendamento não usa entrega ou retirada. */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center space-x-1.5">
                   <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                  <span>1. Onde você prefere o atendimento?</span>
+                  <span>1. Onde será o atendimento?</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
@@ -351,7 +409,7 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                     <Calendar className="w-4 h-4 text-emerald-600" />
-                    <span>3. Escolha a Data & Horário Vago da Agenda:</span>
+                    <span>3. Escolha uma data e um horário livre na agenda:</span>
                   </label>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
                     Vagas em Tempo Real
@@ -467,7 +525,7 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
                   type="submit"
                   className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2"
                 >
-                  <span>Solicitar Agendamento</span>
+                  <span>Agendar horário e pagar via PIX</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -475,6 +533,20 @@ export const ServiceBookingModal: React.FC<ServiceBookingModalProps> = ({
           )}
         </div>
       </div>
+      <PixPaymentModal
+        isOpen={isPixOpen}
+        onClose={() => setIsPixOpen(false)}
+        title={`PIX do agendamento: ${service.title}`}
+        subtitle={`Pagamento direto para ${service.merchantName}`}
+        amount={finalPrice}
+        paymentType="SERVICE_BOOKING"
+        orderId={confirmedBooking?.id}
+        pixKey={service.pixKey || currentMerchant?.pixKey}
+        pixBeneficiaryName={service.pixBeneficiaryName || currentMerchant?.pixBeneficiaryName || service.merchantName}
+        requireReceipt
+        onReceiptAttached={(dataUrl, fileName) => setReceiptData({ dataUrl, fileName })}
+        onConfirmSuccess={handlePixConfirmed}
+      />
     </div>
   );
 };

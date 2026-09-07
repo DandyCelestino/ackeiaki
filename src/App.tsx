@@ -36,6 +36,7 @@ function MarketplaceApp() {
     openTermsModal,
     openPlansModal,
     openPolicyModal,
+    merchants,
     openUserManualModal,
     promptAuthRequirement,
     isAuthModalOpen,
@@ -87,6 +88,27 @@ function MarketplaceApp() {
     setCheckoutModality(modality);
     setCheckoutVariations(variations);
     setSelectedProduct(null); // Close detail modal if open
+  };
+
+  const handleOpenProductBooking = (service: ServiceItem) => {
+    const merchant = merchants.find((item) => item.id === service.merchantId);
+    const schedule = merchant?.scheduleConfig;
+    const availableDays = schedule?.workingDays.filter((day) => day.isOpen).map((day) => day.day) ||
+      ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    const timeSlots = schedule?.customSlots?.filter((slot) => slot.isAvailable).map((slot) => slot.time) ||
+      ['09:00', '10:30', '14:00', '15:30', '17:00'];
+
+    setSelectedService({
+      ...service,
+      availableDays,
+      timeSlots: [...new Set(timeSlots)].sort(),
+      pricingTable: merchant?.pricingTable,
+      pixKey: service.pixKey || merchant?.pixKey,
+      pixBeneficiaryName: service.pixBeneficiaryName || merchant?.pixBeneficiaryName || merchant?.name,
+      executionLocation: service.executionLocation ||
+        (schedule?.serviceExecutionModalities?.length === 1 ? schedule.serviceExecutionModalities[0] : 'AMBOS')
+    });
+    setSelectedProduct(null);
   };
 
   const handleOpenBooking = (service: ServiceItem) => {
@@ -495,6 +517,7 @@ function MarketplaceApp() {
         onClose={() => setSelectedProduct(null)}
         onSelectProduct={(p) => setSelectedProduct(p)}
         onOpenCheckout={handleOpenCheckout}
+        onOpenServiceBooking={handleOpenProductBooking}
         onSelectStore={handleSelectStore}
       />
 
